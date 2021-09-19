@@ -23,33 +23,32 @@ struct Edge
 impl EdgeTrait for Edge
 {
 
-    fn get_id(&self) -> u16
+    fn get_id (&self) -> u16
     {
 
         self.id
 
     }
 
-    fn get_weight(&self) -> f32
+    fn get_weight (&self) -> f32
     {
 
         self.weight
 
     }
 
-    fn get_incident_vertex(&self) -> std::vec<dyn VertexTrait>
+    fn get_incident_vertex (&self) -> std::vec<dyn VertexTrait>
     {
 
         self.incident_vertex
 
     }
 
-    fn set_weight(&mut self, w: f32)
+    fn set_weight (&mut self, w: f32)
     {
 
         self.weight = w;
 
     }
-
 
 }

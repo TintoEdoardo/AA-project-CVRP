@@ -19,7 +19,7 @@ struct StdVertex
 impl VertexTrait for StdVertex
 {
 
-    fn get_id(&self) -> u16
+    fn get_id (&self) -> u16
     {
 
         self.id

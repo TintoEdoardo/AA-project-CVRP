@@ -23,7 +23,7 @@ struct GeoVertex
 impl VertexTrait for GeoVertex
 {
 
-    fn get_id(&self) -> u16
+    fn get_id (&self) -> u16
     {
 
         self.id

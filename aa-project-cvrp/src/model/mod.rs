@@ -8,14 +8,16 @@ mod graph_body;
 mod std_vertex_body;
 
 /* Vertex trait definition. */
-pub trait VertexTrait {
+pub trait VertexTrait
+{
 
     fn get_id(&self) -> u16;
 
 }
 
 /* Edge trait definition. */
-pub trait EdgeTrait {
+pub trait EdgeTrait
+{
 
     fn get_id(&self) -> u16;
     fn get_weight(&self) -> f32;
@@ -26,7 +28,10 @@ pub trait EdgeTrait {
 }
 
 /* Graph trait definition. */
-struct Graph {
+pub struct Graph
+{
+
     vertex_list : Vec<dyn VertexTrait>,
     edge_list   : Vec<dyn EdgeTrait>
+
 }

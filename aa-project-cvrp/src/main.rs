@@ -1,4 +1,5 @@
 mod model;
+mod parser;
 
 fn main() {
     let a = model::VertexTrait {
