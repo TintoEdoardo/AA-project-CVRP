@@ -1,24 +1,32 @@
-//
-//  This module define the graph structure
-//
+/*
+ * This module defines the entities of a graph.
+ */
 
-mod vertex_body;
+mod geo_vertex_body;
 mod edge_body;
 mod graph_body;
+mod std_vertex_body;
 
-// Vertex definition
-struct Vertex {
-    longitude : f32,
-    latitude  : f32
+/* Vertex trait definition. */
+pub trait VertexTrait {
+
+    fn get_id(&self) -> u16;
+
 }
 
-// Edge definition
-struct Edge {
-    vertex_couple : (Vertex, Vertex),
-    weight        : f32
+/* Edge trait definition. */
+pub trait EdgeTrait {
+
+    fn get_id(&self) -> u16;
+    fn get_weight(&self) -> f32;
+    fn get_incident_vertex(&self) -> (dyn VertexTrait, dyn VertexTrait);
+
+    fn set_weight(&mut self, weight : f32) -> void;
+
 }
 
+/* Graph trait definition. */
 struct Graph {
-    vertex_list : Vec<Vertex>,
-    edge_list   : Vec<Edge>
+    vertex_list : Vec<dyn VertexTrait>,
+    edge_list   : Vec<dyn EdgeTrait>
 }

@@ -1,26 +1,55 @@
-use crate::model::{Edge, Vertex};
+/*
+ * This module implements the Edge.
+ *
+ * EDGE:
+ *  - Methods:
+ *    GET_ID: (&self) -> u16
+ *    GET_WEIGHT: (&self) -> f32
+ *    GET_INCIDENT_VERTEX: (&self) -> f32
+ *    SET_WEIGHT: (&mut self, f32) -> void
+ */
 
-impl Edge {
+use crate::model::{EdgeTrait, VertexTrait};
 
-    // Constructor for Edge
-    pub fn create_edge (x : Vertex, y : Vertex) -> Edge {
-        let vc = (x, y);
-        // Create an edge with immutable incident vertex
-        Edge {
-            vertex_couple: vc,
-            weight: 0.0
-        }
+struct Edge
+{
+
+    id              : u16,
+    incident_vertex : std::vec<dyn VertexTrait>,
+    weight          : f32
+
+}
+
+impl EdgeTrait for Edge
+{
+
+    fn get_id(&self) -> u16
+    {
+
+        self.id
+
     }
 
-    pub fn set_weight (&mut self, w : f32) {
-        self.weight = w;
-    }
+    fn get_weight(&self) -> f32
+    {
 
-    pub fn get_weight (&self) -> f32 {
         self.weight
+
     }
 
-    pub fn get_incident_vertex (&self) -> (Vertex, Vertex) {
-        (self.vertex_couple.0, self.vertex_couple.1)
+    fn get_incident_vertex(&self) -> std::vec<dyn VertexTrait>
+    {
+
+        self.incident_vertex
+
     }
+
+    fn set_weight(&mut self, w: f32)
+    {
+
+        self.weight = w;
+
+    }
+
+
 }
