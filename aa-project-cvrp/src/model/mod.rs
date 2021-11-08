@@ -9,8 +9,8 @@ mod utils;
 use crate::tsplib_parser::problem_instance::TSPInstance;
 use crate::sweep_algorithm::sweep_instance_trait::SweepInstanceTrait;
 use crate::savings_algorithm::savings_instance_trait::SavingsInstanceTrait;
-use crate::model::utils::{compute_savings_euc2d, compute_savings_fmatrix, compute_savings_hmatrix};
-use crate::tsplib_parser::keyword_values::{EDGE_WEIGHT_TYPE, NODE_COORD_TYPE, EDGE_WEIGHT_FORMAT};
+use crate::model::utils::{compute_savings_coord, compute_savings_fmatrix, compute_savings_hmatrix};
+use crate::tsplib_parser::keyword_values::{EDGE_WEIGHT_TYPE, EDGE_WEIGHT_FORMAT};
 
 /* The GraphInstance object encapsulates
  * the tsplib dependence, which is then
@@ -29,7 +29,7 @@ pub struct GraphInstance
 impl SavingsInstanceTrait for GraphInstance
 {
 
-    fn compute_savings(&self) -> &Vec<(usize, usize, usize)> {
+    fn compute_savings(&self) -> Vec<(usize, usize, usize)> {
 
         let mut savings : Vec<(usize, usize, usize)> = Vec::new();
 
@@ -39,100 +39,104 @@ impl SavingsInstanceTrait for GraphInstance
 
         /* Define pointers to the instance fields
          * required for further computation. */
-        let edge_weight      : &Option< Vec< Vec<usize>>>
+        let edge_weight        : &Option< Vec< Vec<usize>>>
             = &self.instance.data.edge_weight_section;
 
-        let edge_weight_type : &EDGE_WEIGHT_TYPE
+        let edge_weight_type   : &EDGE_WEIGHT_TYPE
             = &self.instance.specification.edge_weight_type;
 
-        let node_coord       : &NODE_COORD_TYPE
-            = &self.instance.specification.node_coord_type;
+        let edge_weight_format : &Option<EDGE_WEIGHT_FORMAT>
+            = &self.instance.specification.edge_weight_format;
 
         /* Here the different types of CVRP
          * instances should be accounted. */
-        match (edge_weight_type, edge_weight.unwrap())
+        match (edge_weight_type, edge_weight_format, edge_weight.unwrap())
         {
 
-            (EDGE_WEIGHT_TYPE::EUC_2D, _) =>
-                compute_savings_euc2d(
+            (EDGE_WEIGHT_TYPE::EUC_2D, _, _) =>
+                compute_savings_coord(
                     &self.instance.data.node_coord_section,
                     node_number,
                     &savings),
 
-            (EDGE_WEIGHT_TYPE::GEO, _) =>
-                compute_savings_euc2d(
+            (EDGE_WEIGHT_TYPE::GEO, _, _) =>
+                compute_savings_coord(
                     &self.instance.data.node_coord_section,
                     node_number,
                     &savings),
 
-            (_, edge_weight) =>
+            (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::FULL_MATRIX), _) =>
                 compute_savings_fmatrix(
                     &self.instance.data.edge_weight_section,
                     node_number,
                     &savings),
 
-            (_, tsplib::EdgeWeight::LowerCol(..)) =>
+            (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::LOWER_COL), _) =>
                 compute_savings_hmatrix(
                     edge_weight,
                     node_number,
                     false,
                     &savings),
 
-            (_, tsplib::EdgeWeight::LowerDiagCol(..)) =>
+            (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::LOWER_DIAG_COL), _) =>
                 compute_savings_hmatrix(
                     edge_weight,
                     node_number,
                     false,
                     &savings),
 
-            (_, tsplib::EdgeWeight::LowerDiagRow(..)) =>
+            (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::LOWER_DIAG_ROW), _) =>
                 compute_savings_hmatrix(
                     edge_weight,
                     node_number,
                     false,
                     &savings),
 
-            (_, tsplib::EdgeWeight::LowerRow(..)) =>
+            (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::LOWER_ROW), _) =>
                 compute_savings_hmatrix(
                     edge_weight,
                     node_number,
                     false,
                     &savings),
 
-            (_, tsplib::EdgeWeight::UpperCol(..)) =>
+            (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::UPPER_COL), _) =>
                 compute_savings_hmatrix(
                     edge_weight,
                     node_number,
                     true,
                     &savings),
 
-            (_, tsplib::EdgeWeight::UpperDiagCol(..)) =>
+            (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::UPPER_DIAG_COL), _) =>
                 compute_savings_hmatrix(
                     edge_weight,
                     node_number,
                     true,
                     &savings),
 
-            (_, tsplib::EdgeWeight::UpperDiagRow(..)) =>
+            (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::UPPER_DIAG_ROW), _) =>
                 compute_savings_hmatrix(
                     edge_weight,
                     node_number,
                     true,
                     &savings),
 
-            (_, tsplib::EdgeWeight::UpperRow(..)) =>
+            (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::UPPER_ROW), _) =>
                 compute_savings_hmatrix(
                     edge_weight,
                     node_number,
                     true,
                     &savings),
 
-            _ => Err("Weight type not supported. "),
+            _ => (),
 
         }
 
-        return &savings;
+        return savings;
 
+    }
+
+    fn get_capacity(&self) -> usize {
+        todo!()
     }
 
     /* fn get_capacity(&self) -> usize {

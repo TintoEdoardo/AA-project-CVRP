@@ -48,7 +48,7 @@ pub(crate) fn compute_savings_explicit(
 /* Computes savings for instance
  * where the weight of each edge
  * is expressed as euclidean distance. */
-pub(crate) fn compute_savings_euc2d(
+pub(crate) fn compute_savings_coord(
     node_coord      : &Option< Vec<Coord>>,
     node_number     : usize,
     mut savings     : &Vec<(usize, usize, usize)>)
