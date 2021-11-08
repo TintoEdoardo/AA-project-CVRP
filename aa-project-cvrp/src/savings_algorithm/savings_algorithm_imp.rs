@@ -121,7 +121,8 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
                 let route_of_i : usize = node_to_routes[i];
                 let route_of_j : usize = node_to_routes[j];
 
-                routes[route_of_i].append(&mut routes[route_of_j]);
+                let mut prev_rout_of_j: Vec<usize> = routes[route_of_j].clone();
+                routes[route_of_i].append(&mut prev_rout_of_j);
                 routes[route_of_j].clear();
 
                 routes_weight[route_of_i] += routes_weight[route_of_j];

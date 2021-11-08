@@ -2,7 +2,7 @@
  * tsplib type instances. */
 
 use std::ops::Range;
-use crate::tsplib_parser::custom_types::Coord;
+use crate::tsplib_parser::custom_types::{Coord};
 
 /* Computes savings for instance
  * where the weight of each edge
@@ -10,7 +10,7 @@ use crate::tsplib_parser::custom_types::Coord;
 pub(crate) fn compute_savings_explicit(
     edge_weight      : &Option< Vec< Vec<usize>>>,
     node_number      : usize,
-    mut savings      : &Vec<(usize, usize, usize)>)
+    savings          : &mut Vec<(usize, usize, usize)>)
 {
 
     match edge_weight {
@@ -51,7 +51,7 @@ pub(crate) fn compute_savings_explicit(
 pub(crate) fn compute_savings_coord(
     node_coord      : &Option< Vec<Coord>>,
     node_number     : usize,
-    mut savings     : &Vec<(usize, usize, usize)>)
+    savings         : &mut Vec<(usize, usize, usize)>)
 {
 
     match node_coord {
@@ -60,7 +60,7 @@ pub(crate) fn compute_savings_coord(
             {
 
                 let (x_0, y_0) : (f32, f32) = match n_coord[0] {
-                    Coord::Coord2d((n, x, y)) => (x as f32, y as f32),
+                    Coord::Coord2d((_, x, y)) => (x as f32, y as f32),
                     Coord::Coord3d(_) => (0 as f32, 0 as f32),
                 };
 
@@ -68,7 +68,7 @@ pub(crate) fn compute_savings_coord(
                 {
 
                     let (x_i, y_i) : (f32, f32) = match n_coord[i] {
-                        Coord::Coord2d((ni, x, y)) => (x as f32, y as f32),
+                        Coord::Coord2d((_, x, y)) => (x as f32, y as f32),
                         Coord::Coord3d(_) => (0 as f32, 0 as f32),
                     };
 
@@ -76,7 +76,7 @@ pub(crate) fn compute_savings_coord(
                     {
 
                         let (x_j, y_j) : (f32, f32) = match n_coord[j] {
-                            Coord::Coord2d((nj, x, y)) => (x as f32, y as f32),
+                            Coord::Coord2d((_, x, y)) => (x as f32, y as f32),
                             Coord::Coord3d(_) => (0 as f32, 0 as f32),
                         };
 
@@ -112,7 +112,7 @@ pub(crate) fn compute_savings_coord(
 pub(crate) fn compute_savings_fmatrix(
     edge_weight     : &Option< Vec< Vec<usize>>>,
     node_number     : usize,
-    mut savings     : &Vec<(usize, usize, usize)>)
+    savings         : &mut Vec<(usize, usize, usize)>)
 {
 
     compute_savings_explicit(
@@ -129,7 +129,7 @@ pub(crate) fn compute_savings_hmatrix(
     edge_weight     : &Option< Vec< Vec<usize>>>,
     node_number     : usize,
     is_upper        : bool,
-    mut savings     : &Vec<(usize, usize, usize)>)
+    savings         : &mut Vec<(usize, usize, usize)>)
 {
 
     match edge_weight {
@@ -140,7 +140,7 @@ pub(crate) fn compute_savings_hmatrix(
                 for i in 1..node_number
                 {
 
-                    let mut range : Range<usize>;
+                    let range : Range<usize>;
 
                     if is_upper
                     {

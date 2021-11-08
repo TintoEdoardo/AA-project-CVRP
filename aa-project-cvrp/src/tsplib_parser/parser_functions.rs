@@ -83,16 +83,10 @@ pub fn parse_instance_dimension(_dimension : &str) -> usize
 
 }
 
-pub fn parse_instance_capacity(parsed_input : IResult<&str, &str>) -> usize
+pub fn parse_instance_capacity(_capacity : &str) -> usize
 {
 
-    match parsed_input
-    {
-
-        Ok((capacity_value, _)) => capacity_value.parse::<usize>().unwrap(),
-        _ => 0
-
-    }
+    _capacity.parse::<usize>().unwrap()
 
 }
 

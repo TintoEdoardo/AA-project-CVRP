@@ -13,6 +13,7 @@ pub(crate) struct Specification
     pub(crate) data_type : keyword_values::TYPE,
     pub(crate) comment   : Vec<&'static str>,
     pub(crate) dimension : usize,
+    pub(crate) capacity  : usize,
     pub(crate) edge_weight_type   : keyword_values::EDGE_WEIGHT_TYPE,
     pub(crate) edge_weight_format : Option< keyword_values::EDGE_WEIGHT_FORMAT>,
     pub(crate) edge_data_format   : Option< keyword_values::EDGE_DATA_FORMAT>,

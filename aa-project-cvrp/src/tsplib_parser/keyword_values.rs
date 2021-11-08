@@ -16,7 +16,7 @@ pub(crate) enum TYPE
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
 pub(crate) enum EDGE_WEIGHT_TYPE
 {
@@ -37,7 +37,7 @@ pub(crate) enum EDGE_WEIGHT_TYPE
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
 pub(crate) enum EDGE_WEIGHT_FORMAT {
 

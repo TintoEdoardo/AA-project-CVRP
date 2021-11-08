@@ -12,7 +12,7 @@ pub struct SweepSolver<'a>
 
 }
 
-/* Methods of SavingsSolver not
+/* Methods of SweepSolver not
  * defined by the CVRPSolver trait. */
 impl<'a> SweepSolver<'a>
 {

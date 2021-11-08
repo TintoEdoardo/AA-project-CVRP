@@ -8,16 +8,16 @@ use nom::branch::permutation;
 use crate::tsplib_parser::keywords;
 use crate::tsplib_parser::keyword_values;
 use crate::tsplib_parser::problem_instance::{TSPInstance, Specification, Data};
-use crate::tsplib_parser::parser_functions::{parse_key_value, parse_instance_type, parse_instance_dimension, parse_instance_edge_weight_type, parse_instance_edge_weight_format, parse_instance_edge_data_format, parse_instance_display_data_type, parse_instance_node_coord_type, parse_instance_section, parse_coord_3d, parse_depot, parse_coord_2d, parse_edge, parse_adj_vec, parse_node_demand, parse_tour, parse_edge_weight, order_node_coord, order_node_demand_section, compute_edge_weight_matrix};
+use crate::tsplib_parser::parser_functions::{parse_key_value, parse_instance_type, parse_instance_dimension, parse_instance_edge_weight_type, parse_instance_edge_weight_format, parse_instance_edge_data_format, parse_instance_display_data_type, parse_instance_node_coord_type, parse_instance_section, parse_coord_3d, parse_depot, parse_coord_2d, parse_edge, parse_adj_vec, parse_node_demand, parse_tour, parse_edge_weight, order_node_coord, order_node_demand_section, compute_edge_weight_matrix, parse_instance_capacity};
 use nom::multi::many0;
 use nom::IResult;
 use crate::tsplib_parser::custom_types::{Coord, EdgeData};
 
 
-pub fn parse(filename : &str) -> TSPInstance
+pub fn parse(filename : &'static str) -> TSPInstance
 {
 
-    let input_file = fs::read_to_string(filename)
+    let input_file : String = fs::read_to_string(filename)
         .expect("Error encountered while reading the file. ");
 
     /* Compute specification section. */
@@ -29,7 +29,7 @@ pub fn parse(filename : &str) -> TSPInstance
     };
 
     /* Compute data section. */
-    let data_result : IResult<&str, Data> = parse_data(&remaining_input, &specification.unwrap());
+    let data_result : IResult<&str, Data> = parse_data(&remaining_input, &specification.as_ref().unwrap());
     let data : Option<Data> = match data_result
     {
         Ok((_, dat)) => Some(dat),
@@ -55,6 +55,7 @@ fn parse_specification(input : &'static str) -> IResult<&str, Specification>
         parse_key_value(&*keywords::TYPE),
         many0(parse_key_value(&*keywords::COMMENT)),
         parse_key_value(&*keywords::DIMENSION),
+        parse_key_value(&*keywords::CAPACITY),
         parse_key_value(&*keywords::EDGE_WEIGHT_TYPE),
         opt(parse_key_value(&*keywords::EDGE_WEIGHT_FORMAT)),
         opt(parse_key_value(&*keywords::EDGE_DATA_FORMAT)),
@@ -67,6 +68,7 @@ fn parse_specification(input : &'static str) -> IResult<&str, Specification>
             _type,
             _comments,
             _dimension,
+            _capacity,
             _edge_weight_type,
             _edge_weight_format,
             _edge_data_format,
@@ -80,6 +82,7 @@ fn parse_specification(input : &'static str) -> IResult<&str, Specification>
                     data_type          : parse_instance_type(_type),
                     comment            : _comments,
                     dimension          : parse_instance_dimension(_dimension),
+                    capacity           : parse_instance_capacity(_capacity),
                     edge_weight_type   : parse_instance_edge_weight_type(_edge_weight_type),
                     edge_weight_format : parse_instance_edge_weight_format(_edge_weight_format),
                     edge_data_format   : parse_instance_edge_data_format(_edge_data_format),
@@ -116,13 +119,6 @@ fn parse_data<'a>(input : &'a str, specification : &'a Specification) -> IResult
         };
 
     let dimension        : &usize                           = &specification.dimension;
-    let edge_data_format : keyword_values::EDGE_DATA_FORMAT =
-        match specification.edge_data_format
-        {
-            Some(keyword_values::EDGE_DATA_FORMAT::EDGE_LIST) => keyword_values::EDGE_DATA_FORMAT::EDGE_LIST,
-            Some(keyword_values::EDGE_DATA_FORMAT::ADJ_LIST)  => keyword_values::EDGE_DATA_FORMAT::ADJ_LIST,
-            _ => keyword_values::EDGE_DATA_FORMAT::EDGE_LIST, // By default we assume edge list.
-        };
 
     let edge_weight_format : keyword_values::EDGE_WEIGHT_FORMAT =
         match specification.edge_weight_format
