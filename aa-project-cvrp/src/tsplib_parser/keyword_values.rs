@@ -3,8 +3,8 @@
  */
 
 #[derive(Clone)]
-#[allow(non_camel_case_types)]
-pub(crate) enum TYPE
+#[allow(non_camel_case_types, dead_code)]
+pub enum TYPE
 {
 
     TSP, /* Data for symmetric traveling salesman problem. */
@@ -17,8 +17,8 @@ pub(crate) enum TYPE
 }
 
 #[derive(Clone, Eq, PartialEq)]
-#[allow(non_camel_case_types)]
-pub(crate) enum EDGE_WEIGHT_TYPE
+#[allow(non_camel_case_types, dead_code)]
+pub enum EDGE_WEIGHT_TYPE
 {
 
     EXPLICIT, /* Weights are listed explicitly in the corresponding section. */
@@ -38,8 +38,8 @@ pub(crate) enum EDGE_WEIGHT_TYPE
 }
 
 #[derive(Clone, Eq, PartialEq)]
-#[allow(non_camel_case_types)]
-pub(crate) enum EDGE_WEIGHT_FORMAT {
+#[allow(non_camel_case_types, dead_code)]
+pub enum EDGE_WEIGHT_FORMAT {
 
     FUNCTION, /* Weights are given by a function. */
     FULL_MATRIX, /* Weights are given by a full matrix. */
@@ -55,8 +55,8 @@ pub(crate) enum EDGE_WEIGHT_FORMAT {
 }
 
 #[derive(Clone)]
-#[allow(non_camel_case_types)]
-pub(crate) enum EDGE_DATA_FORMAT {
+#[allow(non_camel_case_types, dead_code)]
+pub enum EDGE_DATA_FORMAT {
 
     EDGE_LIST, /* The graph is given by an edge list. */
     ADJ_LIST /* The graph is given by an adjacency list. */
@@ -64,8 +64,8 @@ pub(crate) enum EDGE_DATA_FORMAT {
 }
 
 #[derive(Clone)]
-#[allow(non_camel_case_types)]
-pub(crate) enum NODE_COORD_TYPE {
+#[allow(non_camel_case_types, dead_code)]
+pub enum NODE_COORD_TYPE {
 
     TWOD_COORDS, /* Nodes are specified by coordinates in 2-D. */
     THREED_COORDS, /* Nodes are specified by coordinates in 3-D. */
@@ -74,8 +74,8 @@ pub(crate) enum NODE_COORD_TYPE {
 }
 
 #[derive(Clone)]
-#[allow(non_camel_case_types)]
-pub(crate) enum DISPLAY_DATE_TYPE {
+#[allow(non_camel_case_types, dead_code)]
+pub enum DISPLAY_DATE_TYPE {
 
     COORD_DISPLAY, /* Display is generated from the node coordinates. */
     TWOD_DISPLAY, /* Explicit coordinates in 2-D are given. */

@@ -18,18 +18,18 @@ use rand::rngs::ThreadRng;
 /* The GraphInstance object encapsulates
  * the tsplib dependence, which is then
  * transparent to the other entities. */
-pub struct GraphInstance
+pub struct GraphInstance<'a>
 {
 
     /* Instance of the CVRP problem,
      * implemented in the tsplib module. */
-    instance : TSPInstance,
+    instance : TSPInstance<'a>,
 
 }
 
 /* Implementation of the SavingsInstanceTrait
  * for GraphInstance. */
-impl SavingsInstanceTrait for GraphInstance
+impl SavingsInstanceTrait for GraphInstance<'_>
 {
 
     fn compute_savings(&self) -> Vec<(usize, usize, usize)> {
@@ -176,7 +176,7 @@ impl SavingsInstanceTrait for GraphInstance
 
 /* Implementation of the SweepInstanceTrait
  * for GraphInstance. */
-impl SweepInstanceTrait for GraphInstance
+impl SweepInstanceTrait for GraphInstance<'_>
 {
 
     fn order_nodes(&self) -> Vec<usize>

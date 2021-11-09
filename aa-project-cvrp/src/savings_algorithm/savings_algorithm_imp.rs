@@ -14,6 +14,7 @@ pub struct SavingsSolver<'a>
 
 /* Methods of SavingsSolver not
  * defined by the CVRPSolver trait. */
+#[allow(dead_code)]
 impl<'a> SavingsSolver<'a>
 {
 

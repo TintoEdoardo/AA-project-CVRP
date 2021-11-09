@@ -2,7 +2,6 @@
 
  */
 
-use std::fs;
 use nom::combinator::opt;
 use nom::branch::permutation;
 use crate::tsplib_parser::keywords;
@@ -10,26 +9,28 @@ use crate::tsplib_parser::keyword_values;
 use crate::tsplib_parser::problem_instance::{TSPInstance, Specification, Data};
 use crate::tsplib_parser::parser_functions::{parse_key_value, parse_instance_type, parse_instance_dimension, parse_instance_edge_weight_type, parse_instance_edge_weight_format, parse_instance_edge_data_format, parse_instance_display_data_type, parse_instance_node_coord_type, parse_instance_section, parse_coord_3d, parse_depot, parse_coord_2d, parse_edge, parse_adj_vec, parse_node_demand, parse_tour, parse_edge_weight, order_node_coord, order_node_demand_section, compute_edge_weight_matrix, parse_instance_capacity};
 use nom::multi::many0;
-use nom::IResult;
+use nom::{IResult};
 use crate::tsplib_parser::custom_types::{Coord, EdgeData};
+use nom::error::ErrorKind;
+use nom::error::Error;
 
-
-pub fn parse(filename : &'static str) -> TSPInstance
+pub fn parse(input : &str) -> TSPInstance
 {
 
-    let input_file : String = fs::read_to_string(filename)
-        .expect("Error encountered while reading the file. ");
-
     /* Compute specification section. */
-    let specification_result             : IResult<&str, Specification>  = parse_specification(&input_file);
-    let (remaining_input, specification) : (&str, Option<Specification>) = match specification_result
+    let specification_result             : IResult<&str, Specification>  =
+        parse_specification(input);
+
+    let (remaining_input, specification) : (&str, Option<Specification>) =
+        match specification_result
     {
         Ok((input, spec)) => (input, Some(spec)),
         _ => ("", None),
     };
 
     /* Compute data section. */
-    let data_result : IResult<&str, Data> = parse_data(&remaining_input, &specification.as_ref().unwrap());
+    let data_result : IResult<&str, Data> =
+        parse_data(&remaining_input, &specification.as_ref().unwrap());
     let data : Option<Data> = match data_result
     {
         Ok((_, dat)) => Some(dat),
@@ -44,13 +45,13 @@ pub fn parse(filename : &'static str) -> TSPInstance
 
 }
 
-fn parse_specification(input : &'static str) -> IResult<&str, Specification>
+fn parse_specification(input : &str) -> IResult<&str, Specification>
 {
 
     let specification : Specification;
     let data_input    : &str;
 
-    match permutation((
+    return match permutation((
         parse_key_value(&*keywords::NAME),
         parse_key_value(&*keywords::TYPE),
         many0(parse_key_value(&*keywords::COMMENT)),
@@ -78,25 +79,24 @@ fn parse_specification(input : &'static str) -> IResult<&str, Specification>
             {
                 specification = Specification
                 {
-                    name               : _name,
-                    data_type          : parse_instance_type(_type),
-                    comment            : _comments,
-                    dimension          : parse_instance_dimension(_dimension),
-                    capacity           : parse_instance_capacity(_capacity),
-                    edge_weight_type   : parse_instance_edge_weight_type(_edge_weight_type),
-                    edge_weight_format : parse_instance_edge_weight_format(_edge_weight_format),
-                    edge_data_format   : parse_instance_edge_data_format(_edge_data_format),
-                    display_data_type  : parse_instance_display_data_type(_display_data_type),
-                    node_coord_type    : parse_instance_node_coord_type(_node_coord_type)
+                    name: _name.clone(),
+                    data_type: parse_instance_type(_type),
+                    comment: _comments.clone(),
+                    dimension: parse_instance_dimension(_dimension),
+                    capacity: parse_instance_capacity(_capacity),
+                    edge_weight_type: parse_instance_edge_weight_type(_edge_weight_type),
+                    edge_weight_format: parse_instance_edge_weight_format(_edge_weight_format),
+                    edge_data_format: parse_instance_edge_data_format(_edge_data_format),
+                    display_data_type: parse_instance_display_data_type(_display_data_type),
+                    node_coord_type: parse_instance_node_coord_type(_node_coord_type),
                 };
 
                 data_input = data_sections;
+
+                Ok((data_input, specification))
             }
-
+        _ => Err(nom::Err::Error(Error { input, code: ErrorKind::Permutation })),
     }
-
-    return Ok((data_input, specification));
-
 }
 
 fn parse_data<'a>(input : &'a str, specification : &'a Specification) -> IResult<&'a str, Data>
@@ -158,18 +158,18 @@ fn parse_data<'a>(input : &'a str, specification : &'a Specification) -> IResult
                 data = Data
                 {
                     node_coord_section  : order_node_coord(&_node_coord, dimension),
-                    depot_section       : _depots,
+                    depot_section       : _depots.clone(),
                     demand_section      : order_node_demand_section(&_demands, dimension),
-                    edge_data_section   : _edges_data,
-                    fixed_edges_section : _fixed_edges,
-                    tour_section        : _tours,
+                    edge_data_section   : _edges_data.clone(),
+                    fixed_edges_section : _fixed_edges.clone(),
+                    tour_section        : _tours.clone(),
                     edge_weight_section : compute_edge_weight_matrix(_edges_weight, edge_weight_format, *dimension)
                 };
 
+                Ok(("", data))
+
             }
-
+        _ => Err(nom::Err::Error(Error { input, code: ErrorKind::Permutation })),
     }
-
-    return Ok(("", data));
 
 }

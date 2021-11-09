@@ -8,7 +8,7 @@ use nom::multi::{separated_list0};
 use nom::number::complete::{double};
 use nom::combinator::{map_opt, opt};
 use nom::sequence::{tuple};
-use nom::error::Error;
+use nom::error::{Error, ErrorKind};
 use nom::Err;
 use std::slice::Iter;
 
@@ -65,6 +65,7 @@ pub fn parse_instance_type(_type : &str) -> TYPE
 
 }
 
+/*
 pub fn parse_instance_comment<'a>(parsed_input : IResult<&'a str, &str>) -> &'a str
 {
 
@@ -74,7 +75,7 @@ pub fn parse_instance_comment<'a>(parsed_input : IResult<&'a str, &str>) -> &'a 
         Err(_) => ""
     }
 
-}
+} */
 
 pub fn parse_instance_dimension(_dimension : &str) -> usize
 {
@@ -341,8 +342,16 @@ pub fn parse_instance_section<'a, T: 'a>(
             let remaining_input : IResult<&str, &str> =
                 space0(input)
                     .and_then(|(_, r_in)| opt(line_ending)(r_in))
-                    .and_then(|(_, Some(r_in))| opt(tag("-1"))(r_in))
-                    .and_then(|(_, Some(r_in))| Ok((r_in, "")));
+                    .and_then(|(_, opt_r_in)|
+                        match opt_r_in {
+                            Some(r_in) => opt(tag("-1"))(r_in),
+                            _ => Err(nom::Err::Error(Error { input : "", code: ErrorKind::Tag })),
+                        })
+                    .and_then(|(_, opt_r_in)|
+                        match opt_r_in {
+                            Some(r_in) => Ok((r_in, "")),
+                            _ => Err(nom::Err::Error(Error { input : "", code: ErrorKind::Fail })),
+                        });
 
             let (r_input, _) : (&str, &str) = remaining_input.unwrap_or(("", ""));
 
@@ -367,7 +376,13 @@ pub fn order_node_coord(
     if !node_coord.is_none()
     {
 
-        for n_i in node_coord.unwrap()
+        let n_coord : Vec<Coord> = match node_coord
+        {
+            Some(vec_cord) => vec_cord.clone(),
+            _ => Vec::new()
+        };
+
+        for n_i in n_coord
         {
             let i : usize = match n_i
             {
@@ -398,7 +413,13 @@ pub fn order_node_demand_section(
     if !demand_vector.is_none()
     {
 
-        for d_i in demand_vector.unwrap()
+        let dem_vector : Vec<(Node, usize)> = match demand_vector
+        {
+            Some(d_vec) => d_vec.clone(),
+            _ => Vec::new()
+        };
+
+        for d_i in dem_vector
         {
             /* n_i.0 contains the id of the node. */
             sorted_node_demand[d_i.0] = d_i;
@@ -412,23 +433,33 @@ pub fn order_node_demand_section(
 
 }
 
+/*
 pub fn order_edge_list(
     edge_data : &Option< Vec<EdgeData>>)
     -> Option< Vec<Edge>>
 {
 
-    let mut result : Option< Vec<Edge>> = None;
+    let result : Option< Vec<Edge>>;
 
     result = match edge_data
     {
 
         Some(edge_data_values) => {
 
-            let mut sorted_edges : Vec<Edge>
-                = edge_data_values
-                .iter()
-                .map(|EdgeData::Edge((n1, n2))| ((*n1, *n2)))
-                .collect();
+            let edge_number      : usize     = edge_data_values.len();
+            let mut sorted_edges : Vec<Edge> = Vec::with_capacity(edge_number);
+
+            for i in 0..edge_number
+            {
+
+                let edge_data_i : EdgeData = edge_data_values[i].clone();
+                match edge_data_i
+                {
+                    EdgeData::Edge((n1, n2)) => sorted_edges[i] = (n1, n2),
+                    EdgeData::Adj(_) => {}
+                };
+
+            }
 
             sorted_edges.sort_by_key(|k_v| k_v.0);
 
@@ -442,16 +473,17 @@ pub fn order_edge_list(
     return result;
 
 }
+*/
 
 
-
+/*
 pub fn order_adj_list(
     edge_data : &Option< Vec<EdgeData>>,
     dimension : usize)
     -> Option< Vec<Adj>>
 {
 
-    let mut result : Option< Vec<Adj>> = None;
+    let result : Option< Vec<Adj>>;
 
     result = match edge_data
     {
@@ -460,11 +492,20 @@ pub fn order_adj_list(
             let mut sorted_edge_data : Vec<Adj>
                 = Vec::with_capacity(dimension);
 
-            let mut adj_vec : Vec<Adj>
-                = edge_data_values
-                .iter()
-                .map(|EdgeData::Adj(vec)| *vec)
-                .collect();
+            let mut adj_vec: Vec<Adj> =
+                Vec::with_capacity(dimension);
+            for i in 0..dimension
+            {
+
+                let edge_data_i : EdgeData = edge_data_values[i].clone();
+
+                match edge_data_i
+                {
+                    EdgeData::Adj(node_vec ) => adj_vec[i] = node_vec,
+                    _ => {}
+                };
+
+            }
 
             for i in 0..dimension
             {
@@ -488,6 +529,7 @@ pub fn order_adj_list(
     return result;
 
 }
+*/
 
 pub fn compute_edge_weight_matrix(
     edge_weight_section : Option< Vec< Vec<usize>>>,
@@ -499,7 +541,7 @@ pub fn compute_edge_weight_matrix(
     let index_matrix : Vec<Vec<usize>>
         = match edge_weight_format
     {
-        EDGE_WEIGHT_FORMAT::FULL_MATRIX    => (0..dimension).map(|index| (0..dimension).collect()).collect(),
+        EDGE_WEIGHT_FORMAT::FULL_MATRIX    => (0..dimension).map(|_| (0..dimension).collect()).collect(),
         EDGE_WEIGHT_FORMAT::LOWER_ROW      => (1..dimension).map(|index| (0..(index - 1)).collect()).collect(),
         EDGE_WEIGHT_FORMAT::UPPER_COL      => (1..dimension).map(|index| (0..(index - 1)).collect()).collect(),
         EDGE_WEIGHT_FORMAT::LOWER_DIAG_ROW => (0..dimension).map(|index| (0..index).collect()).collect(),
@@ -515,7 +557,7 @@ pub fn compute_edge_weight_matrix(
 
     let mut weight_matrix    : Vec< Vec<usize>> = index_matrix;
     let mut edge_weight_iter : Iter<usize>;
-    let mut result           : Option< Vec< Vec<usize>>>;
+    let result               : Option< Vec< Vec<usize>>>;
 
     match edge_weight_section
     {

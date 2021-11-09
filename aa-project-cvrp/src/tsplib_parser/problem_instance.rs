@@ -7,11 +7,11 @@ use crate::tsplib_parser::keyword_values;
 use crate::tsplib_parser::custom_types::{Coord, Node, EdgeData};
 
 #[derive(Clone)]
-pub(crate) struct Specification
+pub(crate) struct Specification<'a>
 {
-    pub(crate) name      : &'static str,
+    pub(crate) name      : &'a str,
     pub(crate) data_type : keyword_values::TYPE,
-    pub(crate) comment   : Vec<&'static str>,
+    pub(crate) comment   : Vec<&'a str>,
     pub(crate) dimension : usize,
     pub(crate) capacity  : usize,
     pub(crate) edge_weight_type   : keyword_values::EDGE_WEIGHT_TYPE,
@@ -25,6 +25,7 @@ pub(crate) struct Specification
 #[derive(Clone)]
 pub(crate) struct Data
 {
+
     pub(crate) node_coord_section   : Option< Vec<Coord>>,
     pub(crate) depot_section        : Option< Vec<Node>>,
     pub(crate) demand_section       : Option< Vec<(Node, usize)>>,
@@ -36,11 +37,11 @@ pub(crate) struct Data
 
 }
 
-pub struct TSPInstance
+pub struct TSPInstance<'a>
 {
 
     /* Specification section. */
-    pub(crate) specification : Specification,
+    pub(crate) specification : Specification<'a>,
 
     /* Data section. */
     pub(crate) data : Data,
