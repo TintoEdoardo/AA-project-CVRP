@@ -11,7 +11,7 @@ use crate::sweep_algorithm::sweep_instance_trait::SweepInstanceTrait;
 use crate::savings_algorithm::savings_instance_trait::SavingsInstanceTrait;
 use crate::model::utils::{compute_savings_coord, compute_savings_fmatrix, compute_savings_hmatrix};
 use crate::tsplib_parser::keyword_values::{EDGE_WEIGHT_TYPE, EDGE_WEIGHT_FORMAT};
-use crate::tsplib_parser::custom_types::{Node, EdgeData};
+use crate::tsplib_parser::custom_types::{Node};
 use rand::Rng;
 use rand::rngs::ThreadRng;
 
@@ -217,7 +217,7 @@ impl SweepInstanceTrait for GraphInstance<'_>
 
             /* Compute a list of nodes sorted by
              * distance from n1. */
-            let mut nodes_from_n1: Vec<(Node, f64)> =
+            let nodes_from_n1: Vec<(Node, f64)> =
                 compute_node_list_sort_by_distance(&e_weights, n1, dimension);
 
             n2 = match nodes_from_n1.last()
@@ -328,7 +328,7 @@ impl SweepInstanceTrait for GraphInstance<'_>
         };
 
         let result : Vec<usize> =
-            d_section.iter().map(|(n, d)| *d).collect();
+            d_section.iter().map(|(_, d)| *d).collect();
 
         return result;
 

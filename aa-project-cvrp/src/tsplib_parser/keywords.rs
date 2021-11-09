@@ -1,6 +1,7 @@
 /*
  * List of all keywords.
  */
+#![allow(dead_code)]
 pub(crate) const NAME               : &str = "NAME";
 pub(crate) const TYPE               : &str = "TYPE";
 pub(crate) const COMMENT            : &str = "COMMENT";

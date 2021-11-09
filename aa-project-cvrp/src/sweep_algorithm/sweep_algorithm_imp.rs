@@ -47,9 +47,6 @@ impl<'a> CVRPSolver for SweepSolver<'a>
          * knowing the final size of it. */
         let mut routes: Vec< Vec<usize>> = Vec::new();
 
-        /* Initialize the index of the current routes. */
-        let current_route_index : usize = 0;
-
         while !remaining_nodes.is_empty()
         {
 
