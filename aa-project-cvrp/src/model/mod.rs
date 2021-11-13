@@ -11,7 +11,7 @@ use crate::sweep_algorithm::sweep_instance_trait::SweepInstanceTrait;
 use crate::savings_algorithm::savings_instance_trait::SavingsInstanceTrait;
 use crate::model::utils::{compute_savings_coord, compute_savings_fmatrix, compute_savings_hmatrix};
 use crate::tsplib_parser::keyword_values::{EDGE_WEIGHT_TYPE, EDGE_WEIGHT_FORMAT};
-use crate::tsplib_parser::custom_types::{Node};
+use crate::tsplib_parser::custom_types::{Node, Coord};
 use rand::Rng;
 use rand::rngs::ThreadRng;
 
@@ -185,7 +185,8 @@ impl SweepInstanceTrait for GraphInstance<'_>
         let dimension          : usize                      = self.instance.specification.dimension;
         let edge_weight_type   : &EDGE_WEIGHT_TYPE          = &self.instance.specification.edge_weight_type;
         let edge_weights       : &Option< Vec< Vec<usize>>> = &self.instance.data.edge_weight_section;
-        let mut result: Vec<Node>                  = Vec::with_capacity(dimension);
+        let node_coord         : &Option< Vec< Coord>>      = &self.instance.data.node_coord_section;
+        let mut result         : Vec<Node>                  = Vec::with_capacity(dimension);
 
         /* Select a node randomly. */
         let mut rng            : ThreadRng         = rand::thread_rng();
@@ -200,7 +201,68 @@ impl SweepInstanceTrait for GraphInstance<'_>
             *edge_weight_type == EDGE_WEIGHT_TYPE::EUC_3D
         {
 
+            /* In this solution we reduce the problem to planar
+            instance. Therefore, 3D coord are used as 2D coord. */
 
+            let n_coord : Vec< Coord> = match node_coord.clone()
+            {
+                Some(n_c) => n_c,
+                _ => Vec::new(),
+            };
+
+            /* The format is (Node, Angle, Radius). */
+            let mut node_polar_coord : Vec<(Node, usize, usize)>
+                = Vec::with_capacity(dimension);
+
+            let x_0 : usize = match n_coord[0]
+            {
+                Coord::Coord2d((_, x, _)) => x,
+                Coord::Coord3d((_, x, _, _)) => x,
+            };
+
+            let y_0 : usize = match n_coord[0]
+            {
+                Coord::Coord2d((_, _, y)) => y,
+                Coord::Coord3d((_, _, y, _)) => y,
+            };
+
+            /* Compute the polar coordinates. */
+            for i in 1..dimension
+            {
+
+                let x_i : usize = match n_coord[0]
+                {
+                    Coord::Coord2d((_, x, _)) => x,
+                    Coord::Coord3d((_, x, _, _)) => x,
+                };
+
+                let y_i : usize = match n_coord[0]
+                {
+                    Coord::Coord2d((_, _, y)) => y,
+                    Coord::Coord3d((_, _, y, _)) => y,
+                };
+
+                let angle_i : usize
+                    = ( (y_i - y_0) as f64 / (x_i - x_0) as f64).atan() as usize;
+
+                let radius_i : usize
+                    = ( ((y_i - y_0).pow(2) + (x_i - x_0).pow(2)) as f64).sqrt() as usize;
+
+                node_polar_coord[i] = (i, angle_i, radius_i);
+
+            }
+
+            node_polar_coord.sort_by_key(|(_, a, _)| a.clone());
+            node_polar_coord.sort_by(|&(_, a1, r1), &(_, a2, r2)|
+                {
+                    match a1 == a2
+                    {
+                        true  => r1.cmp(&r2),
+                        false => a1.cmp(&a2),
+                    }
+                });
+
+            result = node_polar_coord.iter().map(|(n, _, _)| n.clone()).collect();
 
         }
         /* Otherwise we have to handle
