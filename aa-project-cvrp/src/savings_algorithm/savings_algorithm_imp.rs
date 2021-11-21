@@ -8,7 +8,7 @@ use crate::algorithm_interface::CVRPSolver;
 pub struct SavingsSolver<'a>
 {
 
-    instance : &'a dyn SavingsInstanceTrait,
+    pub instance : &'a dyn SavingsInstanceTrait,
 
 }
 
@@ -38,11 +38,26 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
 
         /* Compute other parameters for
          * further computation. */
-        let nodes_list         : Vec<usize> = instance.get_nodes_list();
-        let nodes_demand       : Vec<usize> = instance.get_nodes_demand();
-        let node_number        : usize      = nodes_list.len();
-        let mut node_to_routes : Vec<usize> = Vec::with_capacity(node_number);
-        let mut routes_weight  : Vec<usize> = Vec::with_capacity(node_number);
+        let nodes_list           : Vec<usize>       = instance.get_nodes_list();
+        let nodes_demand         : Vec<usize>       = instance.get_nodes_demand();
+        let node_number          : usize            = nodes_list.len();
+        let mut node_to_routes   : Vec<usize>       = Vec::with_capacity(node_number);
+        let mut routes_weight    : Vec<usize>       = Vec::with_capacity(node_number);
+        let mut routes           : Vec< Vec<usize>> = Vec::with_capacity(node_number);
+
+        /* A vector where each i-th value
+         * is true if the i-th node is terminal,
+         * false otherwise. */
+        let mut is_node_terminal : Vec<bool>        = Vec::with_capacity(node_number);
+
+        /* Initialize routes, node_to_routes and routes_weight. */
+        for _ in 0..node_number
+        {
+            routes.push(Vec::new());
+            node_to_routes.push(0);
+            routes_weight.push(0);
+            is_node_terminal.push(true);
+        }
 
         /* We assume a single depot. */
         // let depot_index : usize = 0;
@@ -68,12 +83,11 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
          * Finally computes the routes_weight vector,
          * where the i-th element contains the weight
          * of the i-th routes. */
-        let mut routes : Vec< Vec<usize>> = Vec::new();
         for i in 1..node_number
         {
 
             /* At first we define as many routes as
-             * nodes in te graph. */
+             * nodes in the graph. */
             routes[i].push(nodes_list[i]);
 
             /* At this point, each node is associated
@@ -85,17 +99,6 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
              * the only nodes in it (which is the
              * i-th node). */
             routes_weight[i] = nodes_demand[i];
-
-        }
-
-        /* Generate a vector where each i-th value
-         * is true if the i-th node is terminal,
-         * false otherwise. */
-        let mut is_node_terminal : Vec<bool> = vec![];
-        for i in 1..node_number
-        {
-
-            is_node_terminal[i] = true;
 
         }
 
@@ -122,12 +125,69 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
                 let route_of_i : usize = node_to_routes[i];
                 let route_of_j : usize = node_to_routes[j];
 
-                let mut prev_rout_of_j: Vec<usize> = routes[route_of_j].clone();
-                routes[route_of_i].append(&mut prev_rout_of_j);
-                routes[route_of_j].clear();
+                //DEBUG
+                println!("\nNEW ROUTE COMPUTATION");
+                print!("\nRoute of i (= {}) : ", i);
+                for j in 0..routes[route_of_i].len()
+                {
+                    print!(" {nj}, ", nj = routes[route_of_i][j]);
+                }
+                print!("\nRoute of j (= {}) : ", j);
+                for j in 0..routes[route_of_j].len()
+                {
+                    print!(" {nj}, ", nj = routes[route_of_j][j]);
+                }
+                print!("\n");
 
+                /* We should grant that the two nodes i and j
+                 * are consecutive in the new route. */
+                let first_node_in_route_of_i : usize = *routes[route_of_i].first().unwrap();
+                let last_node_in_route_of_i  : usize = *routes[route_of_i].last().unwrap();
+                let first_node_in_route_of_j : usize = *routes[route_of_j].first().unwrap();
+                let last_node_in_route_of_j  : usize = *routes[route_of_j].last().unwrap();
+
+                if first_node_in_route_of_i == i &&
+                    first_node_in_route_of_j == j
+                {
+                    /* Reverse the route of i. */
+                    routes[route_of_i].reverse();
+                }
+                else if first_node_in_route_of_i == i &&
+                    last_node_in_route_of_j == j
+                {
+                    /* Reverse both the routes. */
+                    routes[route_of_i].reverse();
+                    routes[route_of_j].reverse();
+                }
+                else if last_node_in_route_of_i == i &&
+                    last_node_in_route_of_j == j
+                {
+                    /* Reverse the route of j. */
+                    routes[route_of_j].reverse();
+                }
+                else
+                {
+                    /* No need to reverse anything. */
+                }
+
+                /* Compute new weights for the new route. */
                 routes_weight[route_of_i] += routes_weight[route_of_j];
-                node_to_routes[j] = route_of_i;
+
+                /* The vector node_to_route should be
+                 * updated for all the nodes in the
+                 * routes of j.
+                 * Similarly we should update routes
+                 * weights. */
+                let mut prev_route_of_j : Vec<usize> = routes[route_of_j].clone();
+                for j_index in 0..prev_route_of_j.len()
+                {
+                    let node_in_j : usize     = prev_route_of_j[j_index];
+                    node_to_routes[node_in_j] = route_of_i;
+                    routes_weight[node_in_j]  = routes_weight[route_of_i];
+                }
+
+                routes[route_of_i].append(&mut prev_route_of_j);
+                routes[route_of_j].clear();
 
                 /* Check if i and j are still terminal.
                  * If a node is terminal, then it must be
@@ -152,6 +212,18 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
                 {
                     is_node_terminal[j] = false;
                 }
+
+                //DEBUG
+                println!("NEW ROUTE ");
+                print!(" - route {i} : ", i = route_of_i);
+
+                //DEBUG
+                for j in 0..routes[route_of_i].len()
+                {
+                    print!(" {nj}, ", nj = routes[route_of_i][j]);
+                }
+                print!("\n");
+                println!("---------------");
 
             }
 

@@ -23,7 +23,7 @@ pub struct GraphInstance<'a>
 
     /* Instance of the CVRP problem,
      * implemented in the tsplib module. */
-    instance : TSPInstance<'a>,
+    pub instance : TSPInstance<'a>,
 
 }
 
@@ -148,7 +148,14 @@ impl SavingsInstanceTrait for GraphInstance<'_>
 
         let node_number : usize      = self.instance.specification.dimension;
         let mut nodes   : Vec<usize> = Vec::with_capacity(node_number);
-        for i in 0..node_number
+
+        /* Initializ nodes. */
+        for _ in 0..nodes.capacity()
+        {
+            nodes.push(0);
+        }
+
+        for i in 0..(node_number - 1)
         {
 
             nodes[i] = i;
@@ -186,7 +193,7 @@ impl SweepInstanceTrait for GraphInstance<'_>
         let edge_weight_type   : &EDGE_WEIGHT_TYPE          = &self.instance.specification.edge_weight_type;
         let edge_weights       : &Option< Vec< Vec<usize>>> = &self.instance.data.edge_weight_section;
         let node_coord         : &Option< Vec< Coord>>      = &self.instance.data.node_coord_section;
-        let mut result         : Vec<Node>                  = Vec::with_capacity(dimension);
+        let result         : Vec<Node>;
 
         /* Select a node randomly. */
         let mut rng            : ThreadRng         = rand::thread_rng();
@@ -211,7 +218,7 @@ impl SweepInstanceTrait for GraphInstance<'_>
             };
 
             /* The format is (Node, Angle, Radius). */
-            let mut node_polar_coord : Vec<(Node, usize, usize)>
+            let mut node_polar_coord : Vec<(Node, f64, f64)>
                 = Vec::with_capacity(dimension);
 
             let x_0 : usize = match n_coord[0]
@@ -242,23 +249,23 @@ impl SweepInstanceTrait for GraphInstance<'_>
                     Coord::Coord3d((_, _, y, _)) => y,
                 };
 
-                let angle_i : usize
-                    = ( (y_i - y_0) as f64 / (x_i - x_0) as f64).atan() as usize;
+                let angle_i : f64
+                    = ( (y_i - y_0) as f64 / (x_i - x_0) as f64).atan();
 
-                let radius_i : usize
-                    = ( ((y_i - y_0).pow(2) + (x_i - x_0).pow(2)) as f64).sqrt() as usize;
+                let radius_i : f64
+                    = ( ((y_i - y_0).pow(2) + (x_i - x_0).pow(2)) as f64).sqrt();
 
                 node_polar_coord[i] = (i, angle_i, radius_i);
 
             }
 
-            node_polar_coord.sort_by_key(|(_, a, _)| a.clone());
+            node_polar_coord.sort_by(|(_, a1, _), (_, a2, _)| a1.partial_cmp(a2).unwrap());
             node_polar_coord.sort_by(|&(_, a1, r1), &(_, a2, r2)|
                 {
                     match a1 == a2
                     {
-                        true  => r1.cmp(&r2),
-                        false => a1.cmp(&a2),
+                        true  => r1.partial_cmp(&r2).unwrap(),
+                        false => a1.partial_cmp(&a2).unwrap(),
                     }
                 });
 
@@ -438,7 +445,7 @@ fn compute_node_list_sort_by_distance(
 
     /* Sort the node according to their distances
      * from n1. */
-    nodes_from_n1.sort_by_key(|n| n.1 as usize);
+    nodes_from_n1.sort_by(|(_, d1), (_, d2)| d1.partial_cmp(d2).unwrap());
 
     return nodes_from_n1;
 

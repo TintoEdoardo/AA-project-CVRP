@@ -1,13 +1,13 @@
 use nom::{IResult};
 use nom::bytes::complete::tag;
-use nom::character::complete::{space0, line_ending, multispace1, not_line_ending, multispace0};
+use nom::character::complete::{space0, line_ending, multispace1, not_line_ending, multispace0, space1};
 use crate::tsplib_parser::keyword_values::{TYPE, EDGE_WEIGHT_TYPE, EDGE_WEIGHT_FORMAT, EDGE_DATA_FORMAT, NODE_COORD_TYPE, DISPLAY_DATE_TYPE};
-use crate::tsplib_parser::custom_types::{Coord, Edge, Node, Adj, EdgeData};
+use crate::tsplib_parser::custom_types::{Coord, Node, EdgeData};
 use crate::tsplib_parser::custom_types::Coord::{Coord2d, Coord3d};
 use nom::multi::{separated_list0};
 use nom::number::complete::{double};
 use nom::combinator::{map_opt, opt};
-use nom::sequence::{tuple};
+use nom::sequence::{tuple, preceded};
 use nom::error::{Error, ErrorKind};
 use nom::Err;
 use std::slice::Iter;
@@ -98,7 +98,7 @@ pub fn parse_instance_edge_weight_type(_edge_weight_type : &str) -> EDGE_WEIGHT_
     {
 
         "EXPLICIT"  => EDGE_WEIGHT_TYPE::EXPLICIT,
-        "EUC_2D"    => EDGE_WEIGHT_TYPE::CEIL_2D,
+        "EUC_2D"    => EDGE_WEIGHT_TYPE::EUC_2D,
         "EUC_3D"    => EDGE_WEIGHT_TYPE::EUC_3D,
         "MAX_2D"    => EDGE_WEIGHT_TYPE::MAX_2D,
         "MAX_3D"    => EDGE_WEIGHT_TYPE::MAX_3D,
@@ -166,13 +166,13 @@ pub fn parse_instance_edge_data_format(_edge_data_format : Option<&str>) -> Opti
 
 }
 
-pub fn parse_instance_node_coord_type(_node_coord_type : &str) -> NODE_COORD_TYPE
+pub fn parse_instance_node_coord_type(_node_coord_type : Option<&str>) -> NODE_COORD_TYPE
 {
 
     match _node_coord_type
     {
-        "TWOD_COORDS" => NODE_COORD_TYPE::TWOD_COORDS,
-        "THREED_COORDS"  => NODE_COORD_TYPE::THREED_COORDS,
+        Some("TWOD_COORDS")    => NODE_COORD_TYPE::TWOD_COORDS,
+        Some("THREED_COORDS")  => NODE_COORD_TYPE::THREED_COORDS,
         _ => NODE_COORD_TYPE::NO_COORDS
     }
 
@@ -315,10 +315,32 @@ pub fn parse_edge_weight(edge_weight : Vec<f64>) -> Option< Vec<usize>>
 
 }
 
+pub(crate) fn parse_section_name<'a>(key : &'a str) -> impl Fn(&str) -> IResult<&str, &str> + 'a
+{
+
+    move |x|
+        {
+
+            /* The result is of type OK((input, Tuple())). */
+            let tuple_result: IResult<&str, (&str, &str, &str)> =
+                tuple((multispace0, tag(key), space0))(x);
+
+            let result : IResult<&str, &str> = match tuple_result
+            {
+                Ok((input, (_, value, _))) => Ok((input, value)),
+                _ => Err(Err::Error(Error::new("", nom::error::ErrorKind::Tag))),
+            };
+
+            return result
+
+        }
+
+}
+
 /* Functions for parsing instance sections. */
 pub fn parse_instance_section<'a, T: 'a>(
     section_name : &'a str,
-    line_parser : fn(Vec<f64>) -> Option<T>)
+    line_parser  : fn(Vec<f64>) -> Option<T>)
     -> impl Fn(&'a str)
     -> IResult<&str, Vec<T>> + 'a
 {
@@ -326,37 +348,65 @@ pub fn parse_instance_section<'a, T: 'a>(
     move |section|
         {
 
-            let key_value : IResult<&str, &str> = parse_key_value(section_name)(section);
-            let value     : IResult<&str, Vec<T>> =
-                key_value
-                    .and_then(|(_, sec)| line_ending(sec))
-                    .and_then(|(_, sec)| space0(sec))
-                    .and_then(|(_, sec)|
-                        separated_list0(
-                            multispace1,
-                            map_opt(separated_list0(space0, double), line_parser))
-                            (sec));
+            let mut is_err : bool                = false;
+            let key_value  : IResult<&str, &str> = parse_section_name(section_name)(section);
 
-            let (input, section) : (&str, Vec<T>) = value.unwrap_or(("", Vec::new()));
+            let section_res : IResult<&str, Vec<T>>;
+            match key_value
+            {
+                Ok((sec, _)) =>
+                    {
+                        let fist_parsed_data : IResult<&str, (&str, &str)> =
+                            tuple((line_ending, space0))(sec);
 
-            let remaining_input : IResult<&str, &str> =
-                space0(input)
-                    .and_then(|(_, r_in)| opt(line_ending)(r_in))
-                    .and_then(|(_, opt_r_in)|
-                        match opt_r_in {
-                            Some(r_in) => opt(tag("-1"))(r_in),
-                            _ => Err(nom::Err::Error(Error { input : "", code: ErrorKind::Tag })),
-                        })
-                    .and_then(|(_, opt_r_in)|
-                        match opt_r_in {
-                            Some(r_in) => Ok((r_in, "")),
-                            _ => Err(nom::Err::Error(Error { input : "", code: ErrorKind::Fail })),
-                        });
+                        section_res = match fist_parsed_data
+                        {
+                            Ok((value_list, (_, _))) =>
+                                separated_list0(multispace1,
+                                                map_opt(separated_list0(space1, double), line_parser))(value_list),
+                            _ => Err(nom::Err::Error(Error { input : "", code: ErrorKind::SeparatedList }))
+                        };
+                    }
+                Err(_) => section_res = Err(nom::Err::Error(Error { input : "", code: ErrorKind::SeparatedList })),
+            }
 
-            let (r_input, _) : (&str, &str) = remaining_input.unwrap_or(("", ""));
+            let remaining_input : IResult<&str, Option<&str>>;
+            let section_vec     : Vec<T>;
+            match section_res
+            {
+                Ok((r_input, vec_t)) =>
+                    {
+                        remaining_input =
+                            preceded(opt(space0),
+                                     preceded(
+                                         multispace0,
+                                         opt(tag("-1"))))
+                                (r_input);
 
-            return Ok((r_input, section));
+                        section_vec = vec_t;
+                    }
+                Err(_) =>
+                    {
+                        remaining_input =
+                            Err(nom::Err::Error(Error { input : "", code: ErrorKind::Fail }));
 
+                        section_vec = Vec::new();
+                        is_err      = true;
+                    }
+            }
+
+            let r_input : &str = match remaining_input
+            {
+                Ok((r_in, _)) => r_in,
+                Err(_) => "",
+            };
+
+            return if is_err
+            {
+                Err(nom::Err::Error(Error { input: "", code: ErrorKind::Fail }))
+            } else {
+                Ok((r_input, section_vec))
+            }
         }
 
 }
@@ -372,6 +422,12 @@ pub fn order_node_coord(
 
     let mut result            : Option<Vec<Coord>> = None;
     let mut sorted_node_coord : Vec<Coord>         = Vec::with_capacity(*dimension);
+
+    /* Initialize sorted_node_coord. */
+    for _ in 0..sorted_node_coord.capacity()
+    {
+        sorted_node_coord.push(Coord::Coord2d((0, 0, 0)));
+    }
 
     if !node_coord.is_none()
     {
@@ -389,8 +445,10 @@ pub fn order_node_coord(
                 Coord2d((id, _, _)) => id,
                 Coord3d((id, _, _, _)) => id,
             };
+
             /* n_i.0 contains the id of the node. */
-            sorted_node_coord[i] = n_i;
+            sorted_node_coord[i - 1] = n_i;
+
         }
 
         result = Some(sorted_node_coord);
@@ -410,6 +468,12 @@ pub fn order_node_demand_section(
     let mut result             : Option<Vec<(Node, usize)>> = None;
     let mut sorted_node_demand : Vec<(Node, usize)> = Vec::with_capacity(*dimension);
 
+    /* Initialize sorted_node_demand. */
+    for _ in 0..sorted_node_demand.capacity()
+    {
+        sorted_node_demand.push((0, 0));
+    }
+
     if !demand_vector.is_none()
     {
 
@@ -422,7 +486,7 @@ pub fn order_node_demand_section(
         for d_i in dem_vector
         {
             /* n_i.0 contains the id of the node. */
-            sorted_node_demand[d_i.0] = d_i;
+            sorted_node_demand[d_i.0 - 1] = d_i;
         }
 
         result = Some(sorted_node_demand);

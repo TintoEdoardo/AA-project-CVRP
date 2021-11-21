@@ -2,7 +2,7 @@
  * Values for each keywords.
  */
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types, dead_code)]
 pub enum TYPE
 {
@@ -63,7 +63,7 @@ pub enum EDGE_DATA_FORMAT {
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types, dead_code)]
 pub enum NODE_COORD_TYPE {
 
@@ -73,7 +73,7 @@ pub enum NODE_COORD_TYPE {
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types, dead_code)]
 pub enum DISPLAY_DATE_TYPE {
 

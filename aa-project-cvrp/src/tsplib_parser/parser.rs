@@ -28,6 +28,24 @@ pub fn parse(input : &str) -> TSPInstance
         _ => ("", None),
     };
 
+    //DEBUG
+    /*match specification.clone()
+    {
+        Some(s) =>
+            {
+                println!("Result of '{k}' output is: {ou}", k = "NAME", ou = s.name);
+                println!("Result of '{k}' output is: {ou}", k = "DIMENSION", ou = s.dimension);
+                println!("Result of '{k}' output is: {ou}", k = "EDGE_WEIGHT_TYPE", ou = (s.edge_weight_type == EUC_2D));
+                println!("Result of '{k}' output is: {ou}", k = "TYPE", ou = s.data_type == CVRP);
+                println!("Result of '{k}' output is: {ou}", k = "COMMENT", ou = s.comment.concat());
+                println!("Result of '{k}' output is: {ou}", k = "CAPACITY", ou = s.capacity);
+                println!("Result of '{k}' output is: {ou}", k = "DISPLAY", ou = s.display_data_type == NO_DISPLAY);
+                println!("Result of '{k}' output is: {ou}", k = "NODE_COORD_TYPE", ou = s.node_coord_type == NO_COORDS);
+
+            }
+        None => println!("Specification is None"),
+    }*/
+
     /* Compute data section. */
     let data_result : IResult<&str, Data> =
         parse_data(&remaining_input, &specification.as_ref().unwrap());
@@ -51,18 +69,25 @@ fn parse_specification(input : &str) -> IResult<&str, Specification>
     let specification : Specification;
     let data_input    : &str;
 
-    return match permutation((
-        parse_key_value(&*keywords::NAME),
-        parse_key_value(&*keywords::TYPE),
-        many0(parse_key_value(&*keywords::COMMENT)),
-        parse_key_value(&*keywords::DIMENSION),
-        parse_key_value(&*keywords::CAPACITY),
-        parse_key_value(&*keywords::EDGE_WEIGHT_TYPE),
-        opt(parse_key_value(&*keywords::EDGE_WEIGHT_FORMAT)),
-        opt(parse_key_value(&*keywords::EDGE_DATA_FORMAT)),
-        opt(parse_key_value(&*keywords::DISPLAY_DATA_TYPE)),
-        parse_key_value(&*keywords::NODE_COORD_TYPE)
-    ))(input)
+    let parsed_specification :
+        IResult<&str,
+            (&str, &str, Vec<&str>, &str, &str, &str,
+             Option<&str>, Option<&str>, Option<&str>, Option<&str>)>
+        =
+        permutation((
+            parse_key_value(&*keywords::NAME),
+            parse_key_value(&*keywords::TYPE),
+            many0(parse_key_value(&*keywords::COMMENT)),
+            parse_key_value(&*keywords::DIMENSION),
+            parse_key_value(&*keywords::CAPACITY),
+            parse_key_value(&*keywords::EDGE_WEIGHT_TYPE),
+            opt(parse_key_value(&*keywords::EDGE_WEIGHT_FORMAT)),
+            opt(parse_key_value(&*keywords::EDGE_DATA_FORMAT)),
+            opt(parse_key_value(&*keywords::DISPLAY_DATA_TYPE)),
+            opt(parse_key_value(&*keywords::NODE_COORD_TYPE))))
+            (input);
+
+    return match parsed_specification
     {
         Ok((data_sections, (
             _name,
@@ -79,23 +104,41 @@ fn parse_specification(input : &str) -> IResult<&str, Specification>
             {
                 specification = Specification
                 {
-                    name: _name.clone(),
-                    data_type: parse_instance_type(_type),
-                    comment: _comments.clone(),
-                    dimension: parse_instance_dimension(_dimension),
-                    capacity: parse_instance_capacity(_capacity),
-                    edge_weight_type: parse_instance_edge_weight_type(_edge_weight_type),
-                    edge_weight_format: parse_instance_edge_weight_format(_edge_weight_format),
-                    edge_data_format: parse_instance_edge_data_format(_edge_data_format),
-                    display_data_type: parse_instance_display_data_type(_display_data_type),
-                    node_coord_type: parse_instance_node_coord_type(_node_coord_type),
+                    name               : _name.clone(),
+                    data_type          : parse_instance_type(_type),
+                    comment            : _comments.clone(),
+                    dimension          : parse_instance_dimension(_dimension),
+                    capacity           : parse_instance_capacity(_capacity),
+                    edge_weight_type   : parse_instance_edge_weight_type(_edge_weight_type),
+                    edge_weight_format : parse_instance_edge_weight_format(_edge_weight_format),
+                    edge_data_format   : parse_instance_edge_data_format(_edge_data_format),
+                    display_data_type  : parse_instance_display_data_type(_display_data_type),
+                    node_coord_type    : parse_instance_node_coord_type(_node_coord_type),
                 };
+
+                //DEBUG
+                /*{
+                    println!("Result of '{k}' output is: {ou}", k = "NAME", ou = specification.name);
+                    println!("Result of '{k}' output is: {ou}", k = "DIMENSION", ou = specification.dimension);
+                    println!("Result of '{k}' output is: {ou}", k = "EDGE_WEIGHT_TYPE", ou = (specification.edge_weight_type == EUC_2D));
+                    println!("Result of '{k}' output is: {ou}", k = "TYPE", ou = specification.data_type == CVRP);
+                    println!("Result of '{k}' output is: {ou}", k = "COMMENT", ou = specification.comment.concat());
+                    println!("Result of '{k}' output is: {ou}", k = "CAPACITY", ou = specification.capacity);
+                    println!("Result of '{k}' output is: {ou}", k = "DISPLAY", ou = specification.display_data_type == NO_DISPLAY);
+                    println!("Result of '{k}' output is: {ou}", k = "NODE_COORD_TYPE", ou = specification.node_coord_type == NO_COORDS);
+
+                }*/
 
                 data_input = data_sections;
 
                 Ok((data_input, specification))
             }
-        _ => Err(nom::Err::Error(Error { input, code: ErrorKind::Permutation })),
+        Err(_) =>
+            {
+                //DEBUG
+                println!("Error in specification");
+                Err(nom::Err::Error(Error { input, code: ErrorKind::Permutation }))
+            },
     }
 }
 
@@ -165,6 +208,25 @@ fn parse_data<'a>(input : &'a str, specification : &'a Specification) -> IResult
                     tour_section        : _tours.clone(),
                     edge_weight_section : compute_edge_weight_matrix(_edges_weight, edge_weight_format, *dimension)
                 };
+
+
+                /*//DEBUG
+                match data.node_coord_section.clone()
+                {
+                    Some(v) =>
+                        {
+                            for i in 0..v.len()
+                            {
+                                let (n, x, y) = match v[i] .clone()
+                            {
+                                Coord::Coord2d((ni, xi, yi)) => (ni, xi, yi),
+                                Coord::Coord3d((ni, xi, yi, _)) => (ni, xi, yi),
+                            };
+                                println!("  {x1}, {x2}, {x3}", x1 = n, x2 = x, x3 = y);
+                            }
+                        }
+                    None => println!("Error in node_coord_section")
+                }*/
 
                 Ok(("", data))
 
