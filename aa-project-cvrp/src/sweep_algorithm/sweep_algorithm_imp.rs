@@ -14,6 +14,7 @@ pub struct SweepSolver<'a>
 
 /* Methods of SweepSolver not
  * defined by the CVRPSolver trait. */
+#[allow(dead_code)]
 impl<'a> SweepSolver<'a>
 {
 

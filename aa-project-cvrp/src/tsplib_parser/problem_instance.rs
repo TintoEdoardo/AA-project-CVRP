@@ -31,7 +31,7 @@ pub(crate) struct Data
     pub(crate) demand_section       : Option< Vec<(Node, usize)>>,
     pub(crate) edge_data_section    : Option< Vec<EdgeData>>,
     pub(crate) fixed_edges_section  : Option< Vec<EdgeData>>,
-    // display_data_section :
+    pub(crate) display_data_section : Option< Vec<Coord>>,
     pub(crate) tour_section         : Option< Vec< Vec<Node>>>,
     pub(crate) edge_weight_section  : Option< Vec< Vec<usize>>>,
 

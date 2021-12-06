@@ -83,7 +83,7 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
          * Finally computes the routes_weight vector,
          * where the i-th element contains the weight
          * of the i-th routes. */
-        for i in 1..node_number
+        for i in 1..(node_number - 1)
         {
 
             /* At first we define as many routes as
@@ -124,6 +124,14 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
 
                 let route_of_i : usize = node_to_routes[i];
                 let route_of_j : usize = node_to_routes[j];
+
+                /* Check if one of the two routes is empty.
+                 * In this case continue. */
+                if routes[route_of_i].is_empty() ||
+                    routes[route_of_j].is_empty()
+                {
+                    continue;
+                }
 
                 //DEBUG
                 println!("\nNEW ROUTE COMPUTATION");

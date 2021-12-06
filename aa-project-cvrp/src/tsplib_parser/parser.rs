@@ -13,6 +13,7 @@ use nom::{IResult};
 use crate::tsplib_parser::custom_types::{Coord, EdgeData};
 use nom::error::ErrorKind;
 use nom::error::Error;
+use nom::bytes::complete::tag;
 
 pub fn parse(input : &str) -> TSPInstance
 {
@@ -116,19 +117,6 @@ fn parse_specification(input : &str) -> IResult<&str, Specification>
                     node_coord_type    : parse_instance_node_coord_type(_node_coord_type),
                 };
 
-                //DEBUG
-                /*{
-                    println!("Result of '{k}' output is: {ou}", k = "NAME", ou = specification.name);
-                    println!("Result of '{k}' output is: {ou}", k = "DIMENSION", ou = specification.dimension);
-                    println!("Result of '{k}' output is: {ou}", k = "EDGE_WEIGHT_TYPE", ou = (specification.edge_weight_type == EUC_2D));
-                    println!("Result of '{k}' output is: {ou}", k = "TYPE", ou = specification.data_type == CVRP);
-                    println!("Result of '{k}' output is: {ou}", k = "COMMENT", ou = specification.comment.concat());
-                    println!("Result of '{k}' output is: {ou}", k = "CAPACITY", ou = specification.capacity);
-                    println!("Result of '{k}' output is: {ou}", k = "DISPLAY", ou = specification.display_data_type == NO_DISPLAY);
-                    println!("Result of '{k}' output is: {ou}", k = "NODE_COORD_TYPE", ou = specification.node_coord_type == NO_COORDS);
-
-                }*/
-
                 data_input = data_sections;
 
                 Ok((data_input, specification))
@@ -178,14 +166,186 @@ fn parse_data<'a>(input : &'a str, specification : &'a Specification) -> IResult
             _ => keyword_values::EDGE_WEIGHT_FORMAT::FUNCTION /* Temporary. */
         };
 
+
+    /* Apply the parsing function sequentially. */
+    let mut _node_coord   : Option< Vec<Coord>>          = None;
+    let mut _depots       : Option< Vec<usize>>          = None;
+    let mut _demands      : Option< Vec<(usize, usize)>> = None;
+    let mut _edges_data   : Option< Vec<EdgeData>>       = None;
+    let mut _fixed_edges  : Option< Vec<EdgeData>>       = None;
+    let mut _display_data : Option< Vec<Coord>>          = None;
+    let mut _tours        : Option< Vec< Vec<usize>>>    = None;
+    let mut _edges_weight : Option< Vec< Vec<usize>>>    = None;
+
+    let mut eof_reached     : bool = false;
+    let mut remaining_input : &str = input;
+
+    while !eof_reached
+    {
+
+        /* Check if EOF is reached. */
+        let current_parsing_unit : IResult<&str, &str> =
+            tag("EOF")(remaining_input);
+        match current_parsing_unit
+        {
+            Ok(_) =>
+                {
+                    eof_reached = true;
+                    continue;
+                }
+            _ => {}
+        }
+
+        /* Sequentially try every section parser. */
+
+        let current_parsing_unit =
+            parse_instance_section
+                (keywords::NODE_COORD_SECTION, node_coord_parser)
+                (remaining_input);
+        match current_parsing_unit
+        {
+            Ok((r_in, res)) =>
+                {
+                    remaining_input = r_in;
+                    _node_coord = Some(res);
+                    continue;
+                }
+            _ => {}
+        }
+
+        let current_parsing_unit =
+            parse_instance_section
+                (keywords::DEPOT_SECTION, parse_depot)
+                (remaining_input);
+        match current_parsing_unit
+        {
+            Ok((r_in, mut res)) =>
+                {
+                    remaining_input = r_in;
+                    res.truncate(res.len() - 1);
+                    _depots = Some(res);
+                    continue;
+                }
+            _ => {}
+        }
+
+        let current_parsing_unit =
+            parse_instance_section
+                (keywords::DEMAND_SECTION, parse_node_demand)
+                (remaining_input);
+        match current_parsing_unit
+        {
+            Ok((r_in, res)) =>
+                {
+                    remaining_input = r_in;
+                    _demands = Some(res);
+                    continue;
+                }
+            _ => {}
+        }
+
+        let current_parsing_unit =
+            parse_instance_section
+                (keywords::EDGE_DATA_SECTION, edge_data_parser)
+                (remaining_input);
+        match current_parsing_unit
+        {
+            Ok((r_in, res)) =>
+                {
+                    remaining_input = r_in;
+                    _edges_data = Some(res);
+                    continue;
+                }
+            _ => {}
+        }
+
+        let current_parsing_unit =
+            parse_instance_section
+                (keywords::FIXED_EDGE_SECTION, parse_edge)
+                (remaining_input);
+        match current_parsing_unit
+        {
+            Ok((r_in, res)) =>
+                {
+                    remaining_input = r_in;
+                    _fixed_edges = Some(res);
+                    continue;
+                }
+            _ => {}
+        }
+
+        let current_parsing_unit =
+            parse_instance_section
+                (keywords::DISPLAY_DATA_SECTION , parse_coord_2d)
+                (remaining_input);
+        match current_parsing_unit
+        {
+            Ok((r_in, res)) =>
+                {
+                    remaining_input = r_in;
+                    _display_data = Some(res);
+                    continue;
+                }
+            _ => {}
+        }
+
+        let current_parsing_unit =
+            parse_instance_section
+                (keywords::TOUR_SECTION, parse_tour)
+                (remaining_input);
+        match current_parsing_unit
+        {
+            Ok((r_in, res)) =>
+                {
+                    remaining_input = r_in;
+                    _tours = Some(res);
+                    continue;
+                }
+            _ => {}
+        }
+
+        let current_parsing_unit =
+            parse_instance_section
+                (keywords::EDGE_WEIGHT_SECTION, parse_edge_weight)
+                (remaining_input);
+        match current_parsing_unit
+        {
+            Ok((r_in, res)) =>
+                {
+                    remaining_input = r_in;
+                    _edges_weight = Some(res);
+                    continue;
+                }
+            _ => {}
+        }
+
+    }
+
+    data = Data
+    {
+        node_coord_section   : order_node_coord(&_node_coord, dimension),
+        depot_section        : _depots.clone(),
+        demand_section       : order_node_demand_section(&_demands, dimension),
+        edge_data_section    : _edges_data.clone(),
+        fixed_edges_section  : _fixed_edges.clone(),
+        display_data_section : _display_data.clone(),
+        tour_section         : _tours.clone(),
+        edge_weight_section  : compute_edge_weight_matrix(_edges_weight, edge_weight_format, *dimension)
+    };
+
+    return Ok(("", data));
+
+    /*
     match permutation((
         opt(parse_instance_section(keywords::NODE_COORD_SECTION, node_coord_parser)),
         opt(parse_instance_section(keywords::DEPOT_SECTION, parse_depot)),
         opt(parse_instance_section(keywords::DEMAND_SECTION, parse_node_demand)),
         opt(parse_instance_section(keywords::EDGE_DATA_SECTION, edge_data_parser)),
         opt(parse_instance_section(keywords::FIXED_EDGE_SECTION, parse_edge)),
+        opt(parse_instance_section(keywords::DISPLAY_DATA_SECTION , parse_coord_2d)),
         opt(parse_instance_section(keywords::TOUR_SECTION, parse_tour)),
-        opt(parse_instance_section(keywords::EDGE_WEIGHT_SECTION, parse_edge_weight))
+        opt(parse_instance_section(keywords::EDGE_WEIGHT_SECTION, parse_edge_weight)),
+        tag("EOF")
     ))(input)
     {
         Ok((_, (
@@ -194,44 +354,31 @@ fn parse_data<'a>(input : &'a str, specification : &'a Specification) -> IResult
             _demands,
             _edges_data,
             _fixed_edges,
+            _display_data,
             _tours,
-            _edges_weight)))
+            _edges_weight,
+            _eof)))
         =>
             {
                 data = Data
                 {
-                    node_coord_section  : order_node_coord(&_node_coord, dimension),
-                    depot_section       : _depots.clone(),
-                    demand_section      : order_node_demand_section(&_demands, dimension),
-                    edge_data_section   : _edges_data.clone(),
-                    fixed_edges_section : _fixed_edges.clone(),
-                    tour_section        : _tours.clone(),
-                    edge_weight_section : compute_edge_weight_matrix(_edges_weight, edge_weight_format, *dimension)
+                    node_coord_section   : order_node_coord(&_node_coord, dimension),
+                    depot_section        : _depots.clone(),
+                    demand_section       : order_node_demand_section(&_demands, dimension),
+                    edge_data_section    : _edges_data.clone(),
+                    fixed_edges_section  : _fixed_edges.clone(),
+                    display_data_section : _display_data.clone(),
+                    tour_section         : _tours.clone(),
+                    edge_weight_section  : compute_edge_weight_matrix(_edges_weight, edge_weight_format, *dimension)
                 };
 
-
-                /*//DEBUG
-                match data.node_coord_section.clone()
-                {
-                    Some(v) =>
-                        {
-                            for i in 0..v.len()
-                            {
-                                let (n, x, y) = match v[i] .clone()
-                            {
-                                Coord::Coord2d((ni, xi, yi)) => (ni, xi, yi),
-                                Coord::Coord3d((ni, xi, yi, _)) => (ni, xi, yi),
-                            };
-                                println!("  {x1}, {x2}, {x3}", x1 = n, x2 = x, x3 = y);
-                            }
-                        }
-                    None => println!("Error in node_coord_section")
-                }*/
 
                 Ok(("", data))
 
             }
         _ => Err(nom::Err::Error(Error { input, code: ErrorKind::Permutation })),
     }
+
+     */
 
 }

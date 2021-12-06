@@ -1,8 +1,8 @@
 /* Utility functions used for different
  * tsplib type instances. */
 
-use std::ops::Range;
 use crate::tsplib_parser::custom_types::{Coord};
+use crate::tsplib_parser::keyword_values::{EDGE_WEIGHT_FORMAT};
 
 /* Computes savings for instance
  * where the weight of each edge
@@ -18,10 +18,10 @@ pub(crate) fn compute_savings_explicit(
         Some(e_weight) =>
             {
 
-                for i in 1..node_number
+                for i in 1..(node_number - 1)
                 {
 
-                    for j in (i + 1)..node_number
+                    for j in (i + 1)..(node_number - 1)
                     {
 
                         let d_0_i : usize = e_weight[0][i];
@@ -29,7 +29,7 @@ pub(crate) fn compute_savings_explicit(
                         let d_i_j : usize = e_weight[i][j];
 
                         /* Compute the saving for the edge between i, j. */
-                        let s : usize = d_0_i + d_0_j - d_i_j;
+                        let s : usize = (d_0_i + d_0_j).checked_sub(d_i_j).unwrap_or(0);
 
                         savings.push((i, j, s));
 
@@ -125,6 +125,7 @@ pub(crate) fn compute_savings_fmatrix(
 /* Computes savings for instance
  * where the weight of each edge
  * is expressed in semi-full matrix. */
+/*
 pub(crate) fn compute_savings_hmatrix(
     edge_weight     : &Option< Vec< Vec<usize>>>,
     node_number     : usize,
@@ -137,7 +138,7 @@ pub(crate) fn compute_savings_hmatrix(
         Some(e_weight) =>
             {
 
-                for i in 1..node_number
+                for i in 1..(node_number - 1)
                 {
 
                     let range : Range<usize>;
@@ -145,7 +146,8 @@ pub(crate) fn compute_savings_hmatrix(
                     if is_upper
                     {
 
-                        range = i..node_number;
+                        /* Omit the node i and the depot. */
+                        range = i..(node_number - 1 - 1);
 
                     }
                     else
@@ -170,7 +172,7 @@ pub(crate) fn compute_savings_hmatrix(
                             let d_i_j : usize = e_weight[i][j];
 
                             /* Compute the saving for the edge between i, j. */
-                            let s : usize = d_0_i + d_0_j - d_i_j;
+                            let s : usize = (d_0_i + d_0_j).checked_sub(d_i_j).unwrap_or(0);
 
                             savings.push((i, j, s));
 
@@ -183,6 +185,118 @@ pub(crate) fn compute_savings_hmatrix(
             }
 
         _ => (),
+    }
+
+}
+ */
+
+pub(crate) fn from_hmatrix_to_fmatrix(
+    edge_weight     : &Option< Vec< Vec<usize>>>,
+    node_number     : usize,
+    e_weight_format : EDGE_WEIGHT_FORMAT)
+    -> Option< Vec< Vec<usize>>>
+{
+
+    match edge_weight
+    {
+        Some(e_weight) =>
+        {
+
+            let mut result : Vec< Vec<usize>> = Vec::with_capacity(node_number);
+            for _i in 0..(node_number - 1)
+            {
+                result.push(Vec::with_capacity(node_number));
+            }
+
+            if e_weight_format == EDGE_WEIGHT_FORMAT::UPPER_ROW ||
+                e_weight_format == EDGE_WEIGHT_FORMAT::UPPER_DIAG_ROW
+            {
+                for i in 0..(node_number - 1)
+                {
+                    for j in 0..(node_number - 1)
+                    {
+                        if i > j
+                        {
+                            let res_i_j : usize = result[j][i].clone();
+                            result[i].push(res_i_j);
+                        }
+                        else if i == j
+                        {
+                            result[i].push(0);
+                        }
+                        else if i < j
+                        {
+                            let mut res_i: Vec<usize> = e_weight[i].clone();
+                            result[i].append(&mut res_i);
+                            break;
+                        }
+                    }
+                }
+            }
+            else if e_weight_format == EDGE_WEIGHT_FORMAT::LOWER_ROW ||
+                e_weight_format == EDGE_WEIGHT_FORMAT::LOWER_DIAG_ROW
+            {
+                for i in (0..(node_number - 1)).rev()
+                {
+
+                    let mut tail_of_row_i : Vec<usize> = Vec::new();
+
+                    for j in (0..(node_number - 1)).rev()
+                    {
+                        if i < j
+                        {
+                            let res_i_j : usize = e_weight[j][i].clone();
+                            tail_of_row_i.push(res_i_j);
+                        }
+                        else if i == j
+                        {
+                            tail_of_row_i.push(0);
+                            tail_of_row_i.reverse();
+                            result[i].append(&mut tail_of_row_i.clone());
+                        }
+                        else if i > j
+                        {
+                            let mut e_w_i : Vec<usize>  = e_weight[i].clone();
+                            let mut res_i : Vec<usize>  = result[i].clone();
+                            e_w_i.append(&mut res_i);
+                            result[i] = e_w_i;
+                        }
+                    }
+                }
+            }
+            else if e_weight_format == EDGE_WEIGHT_FORMAT::UPPER_COL ||
+                e_weight_format == EDGE_WEIGHT_FORMAT::UPPER_DIAG_COL
+            {
+                /*
+                    TODO:
+                        IMPLEMENT
+                */
+            }
+            else if e_weight_format == EDGE_WEIGHT_FORMAT::LOWER_COL ||
+                e_weight_format == EDGE_WEIGHT_FORMAT::LOWER_DIAG_COL
+            {
+                /*
+                    TODO:
+                        IMPLEMENT
+                */
+            }
+            else
+            {
+                result.clear();
+            }
+
+
+            if result.len() > 0
+            {
+                Some(result)
+            }
+            else
+            {
+                None
+            }
+
+        }
+        _ => None
     }
 
 }

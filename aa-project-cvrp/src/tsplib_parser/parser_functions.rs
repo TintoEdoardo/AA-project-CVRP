@@ -10,7 +10,6 @@ use nom::combinator::{map_opt, opt};
 use nom::sequence::{tuple, preceded};
 use nom::error::{Error, ErrorKind};
 use nom::Err;
-use std::slice::Iter;
 
 
 pub(crate) fn parse_key_value<'a>(key : &'a str) -> impl Fn(&str) -> IResult<&str, &str> + 'a
@@ -23,9 +22,10 @@ pub(crate) fn parse_key_value<'a>(key : &'a str) -> impl Fn(&str) -> IResult<&st
             let tuple_result: IResult<&str, (&str, &str, &str,  &str, &str, &str)> =
                 tuple((multispace0, tag(key), space0, tag(":"), space0, not_line_ending))(x);
 
+            /* Trim from space at the end, if any. */
             let result : IResult<&str, &str> = match tuple_result
             {
-                Ok((input, (_, _, _, _, _, value))) => Ok((input, value)),
+                Ok((input, (_, _, _, _, _, value))) => Ok((input, value.trim_end_matches(" "))),
                 _ => Err(Err::Error(Error::new("", nom::error::ErrorKind::Tag))),
             };
 
@@ -119,28 +119,31 @@ pub fn parse_instance_edge_weight_type(_edge_weight_type : &str) -> EDGE_WEIGHT_
 pub fn parse_instance_edge_weight_format(_edge_weight_format : Option<&str>) -> Option<EDGE_WEIGHT_FORMAT>
 {
 
+    let result : Option<EDGE_WEIGHT_FORMAT>;
+
     match _edge_weight_format
     {
         Some(value) =>
             {
                 match value
                 {
-                    "FUNCTION"       => Some(EDGE_WEIGHT_FORMAT::FUNCTION),
-                    "FULLL_MATRIX"   => Some(EDGE_WEIGHT_FORMAT::FULL_MATRIX),
-                    "UPPER_ROW"      => Some(EDGE_WEIGHT_FORMAT::UPPER_ROW),
-                    "LOWER_ROW"      => Some(EDGE_WEIGHT_FORMAT::LOWER_ROW),
-                    "UPPER_DIAG_ROW" => Some(EDGE_WEIGHT_FORMAT::UPPER_DIAG_ROW),
-                    "LOWER_DIAG_ROW" => Some(EDGE_WEIGHT_FORMAT::LOWER_DIAG_ROW),
-                    "UPPER_COL"      => Some(EDGE_WEIGHT_FORMAT::UPPER_COL),
-                    "LOWER_COL"      => Some(EDGE_WEIGHT_FORMAT::LOWER_COL),
-                    "UPPER_DIAG_COL" => Some(EDGE_WEIGHT_FORMAT::LOWER_DIAG_COL),
-                    "LOWER_DIAG_COL" => Some(EDGE_WEIGHT_FORMAT::LOWER_DIAG_COL),
-                    _ => None
+                    "FUNCTION"       => result = Some(EDGE_WEIGHT_FORMAT::FUNCTION),
+                    "FULL_MATRIX"    => result = Some(EDGE_WEIGHT_FORMAT::FULL_MATRIX),
+                    "UPPER_ROW"      => result = Some(EDGE_WEIGHT_FORMAT::UPPER_ROW),
+                    "LOWER_ROW"      => result = Some(EDGE_WEIGHT_FORMAT::LOWER_ROW),
+                    "UPPER_DIAG_ROW" => result = Some(EDGE_WEIGHT_FORMAT::UPPER_DIAG_ROW),
+                    "LOWER_DIAG_ROW" => result = Some(EDGE_WEIGHT_FORMAT::LOWER_DIAG_ROW),
+                    "UPPER_COL"      => result = Some(EDGE_WEIGHT_FORMAT::UPPER_COL),
+                    "LOWER_COL"      => result = Some(EDGE_WEIGHT_FORMAT::LOWER_COL),
+                    "UPPER_DIAG_COL" => result = Some(EDGE_WEIGHT_FORMAT::LOWER_DIAG_COL),
+                    "LOWER_DIAG_COL" => result = Some(EDGE_WEIGHT_FORMAT::LOWER_DIAG_COL),
+                    _ => result = None
                 }
             }
-        _ => None,
+        _ => result = None,
     }
 
+    return result;
 
 }
 
@@ -620,7 +623,7 @@ pub fn compute_edge_weight_matrix(
     };
 
     let mut weight_matrix    : Vec< Vec<usize>> = index_matrix;
-    let mut edge_weight_iter : Iter<usize>;
+    let mut edge_weight_iter; // : Iter<usize>;
     let result               : Option< Vec< Vec<usize>>>;
 
     match edge_weight_section
@@ -653,5 +656,4 @@ pub fn compute_edge_weight_matrix(
 /*
     TODO:
         FIXED_EDGE_SECTION
-        DISPLAY_DATA_SECTION
  */

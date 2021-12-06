@@ -14,7 +14,7 @@ mod tsplib_parser;
 
 fn main() {
 
-    let contents = fs::read_to_string("./input/bayg-n29-k4.vrp")
+    let contents = fs::read_to_string("./input/ulysses-n22-k4.vrp")
         .expect("Something went wrong reading the file");
 
     /* let contents

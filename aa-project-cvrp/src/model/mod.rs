@@ -9,7 +9,7 @@ mod utils;
 use crate::tsplib_parser::problem_instance::TSPInstance;
 use crate::sweep_algorithm::sweep_instance_trait::SweepInstanceTrait;
 use crate::savings_algorithm::savings_instance_trait::SavingsInstanceTrait;
-use crate::model::utils::{compute_savings_coord, compute_savings_fmatrix, compute_savings_hmatrix};
+use crate::model::utils::{compute_savings_coord, compute_savings_fmatrix, from_hmatrix_to_fmatrix};
 use crate::tsplib_parser::keyword_values::{EDGE_WEIGHT_TYPE, EDGE_WEIGHT_FORMAT};
 use crate::tsplib_parser::custom_types::{Node, Coord};
 use rand::Rng;
@@ -75,60 +75,60 @@ impl SavingsInstanceTrait for GraphInstance<'_>
                     &mut savings),
 
             (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::LOWER_COL), _) =>
-                compute_savings_hmatrix(
-                    edge_weight,
+                compute_savings_fmatrix(
+                    &from_hmatrix_to_fmatrix(edge_weight, node_number, EDGE_WEIGHT_FORMAT::LOWER_COL),
                     node_number,
-                    false,
-                    &mut savings),
+                    &mut savings
+                ),
 
             (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::LOWER_DIAG_COL), _) =>
-                compute_savings_hmatrix(
-                    edge_weight,
+                compute_savings_fmatrix(
+                    &from_hmatrix_to_fmatrix(edge_weight, node_number, EDGE_WEIGHT_FORMAT::LOWER_DIAG_COL),
                     node_number,
-                    false,
-                    &mut savings),
+                    &mut savings
+                ),
 
             (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::LOWER_DIAG_ROW), _) =>
-                compute_savings_hmatrix(
-                    edge_weight,
+                compute_savings_fmatrix(
+                    &from_hmatrix_to_fmatrix(edge_weight, node_number, EDGE_WEIGHT_FORMAT::LOWER_DIAG_ROW),
                     node_number,
-                    false,
-                    &mut savings),
+                    &mut savings
+                ),
 
             (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::LOWER_ROW), _) =>
-                compute_savings_hmatrix(
-                    edge_weight,
+                compute_savings_fmatrix(
+                    &from_hmatrix_to_fmatrix(edge_weight, node_number, EDGE_WEIGHT_FORMAT::LOWER_ROW),
                     node_number,
-                    false,
-                    &mut savings),
+                    &mut savings
+                ),
 
             (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::UPPER_COL), _) =>
-                compute_savings_hmatrix(
-                    edge_weight,
+                compute_savings_fmatrix(
+                    &from_hmatrix_to_fmatrix(edge_weight, node_number, EDGE_WEIGHT_FORMAT::UPPER_COL),
                     node_number,
-                    true,
-                    &mut savings),
+                    &mut savings
+                ),
 
             (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::UPPER_DIAG_COL), _) =>
-                compute_savings_hmatrix(
-                    edge_weight,
+                compute_savings_fmatrix(
+                    &from_hmatrix_to_fmatrix(edge_weight, node_number, EDGE_WEIGHT_FORMAT::UPPER_DIAG_COL),
                     node_number,
-                    true,
-                    &mut savings),
+                    &mut savings
+                ),
 
             (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::UPPER_DIAG_ROW), _) =>
-                compute_savings_hmatrix(
-                    edge_weight,
+                compute_savings_fmatrix(
+                    &from_hmatrix_to_fmatrix(edge_weight, node_number, EDGE_WEIGHT_FORMAT::UPPER_DIAG_ROW),
                     node_number,
-                    true,
-                    &mut savings),
+                    &mut savings
+                ),
 
             (EDGE_WEIGHT_TYPE::EXPLICIT, Some(EDGE_WEIGHT_FORMAT::UPPER_ROW), _) =>
-                compute_savings_hmatrix(
-                    edge_weight,
+                compute_savings_fmatrix(
+                    &from_hmatrix_to_fmatrix(edge_weight, node_number, EDGE_WEIGHT_FORMAT::UPPER_ROW),
                     node_number,
-                    true,
-                    &mut savings),
+                    &mut savings
+                ),
 
             _ => (),
 
