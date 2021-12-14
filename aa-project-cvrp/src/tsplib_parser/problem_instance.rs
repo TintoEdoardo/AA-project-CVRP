@@ -37,6 +37,7 @@ pub(crate) struct Data
 
 }
 
+#[derive(Clone)]
 pub struct TSPInstance<'a>
 {
 

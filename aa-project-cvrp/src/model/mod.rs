@@ -1,5 +1,5 @@
 /*
- * This module encapsulates the tsplib module,
+ * This module encapsulates the dependency with tsplib_parser,
  * provides new trait definitions to hide the
  * difference between the CRVP instances received
  * as input.
@@ -149,7 +149,7 @@ impl SavingsInstanceTrait for GraphInstance<'_>
         let node_number : usize      = self.instance.specification.dimension;
         let mut nodes   : Vec<usize> = Vec::with_capacity(node_number);
 
-        /* Initializ nodes. */
+        /* Initialize nodes. */
         for _ in 0..nodes.capacity()
         {
             nodes.push(0);
@@ -193,7 +193,7 @@ impl SweepInstanceTrait for GraphInstance<'_>
         let edge_weight_type   : &EDGE_WEIGHT_TYPE          = &self.instance.specification.edge_weight_type;
         let edge_weights       : &Option< Vec< Vec<usize>>> = &self.instance.data.edge_weight_section;
         let node_coord         : &Option< Vec< Coord>>      = &self.instance.data.node_coord_section;
-        let result         : Vec<Node>;
+        let result             : Vec<Node>;
 
         /* Select a node randomly. */
         let mut rng            : ThreadRng         = rand::thread_rng();
@@ -203,7 +203,7 @@ impl SweepInstanceTrait for GraphInstance<'_>
 
         /* Check if the edge weight are expressed
          * as coord distances. */
-        if  *edge_weight_type == EDGE_WEIGHT_TYPE::GEO ||
+        if  *edge_weight_type == EDGE_WEIGHT_TYPE::GEO    ||
             *edge_weight_type == EDGE_WEIGHT_TYPE::EUC_2D ||
             *edge_weight_type == EDGE_WEIGHT_TYPE::EUC_3D
         {
@@ -219,15 +219,15 @@ impl SweepInstanceTrait for GraphInstance<'_>
 
             /* The format is (Node, Angle, Radius). */
             let mut node_polar_coord : Vec<(Node, f64, f64)>
-                = Vec::with_capacity(dimension);
+                = Vec::with_capacity(dimension - 1);
 
-            let x_0 : usize = match n_coord[0]
+            let x_0 : f64 = match n_coord[0]
             {
                 Coord::Coord2d((_, x, _)) => x,
                 Coord::Coord3d((_, x, _, _)) => x,
             };
 
-            let y_0 : usize = match n_coord[0]
+            let y_0 : f64 = match n_coord[0]
             {
                 Coord::Coord2d((_, _, y)) => y,
                 Coord::Coord3d((_, _, y, _)) => y,
@@ -237,25 +237,25 @@ impl SweepInstanceTrait for GraphInstance<'_>
             for i in 1..dimension
             {
 
-                let x_i : usize = match n_coord[0]
+                let x_i : f64 = match n_coord[i]
                 {
                     Coord::Coord2d((_, x, _)) => x,
                     Coord::Coord3d((_, x, _, _)) => x,
                 };
 
-                let y_i : usize = match n_coord[0]
+                let y_i : f64 = match n_coord[i]
                 {
                     Coord::Coord2d((_, _, y)) => y,
                     Coord::Coord3d((_, _, y, _)) => y,
                 };
 
                 let angle_i : f64
-                    = ( (y_i - y_0) as f64 / (x_i - x_0) as f64).atan();
+                    = ( (y_i - y_0) / (x_i - x_0) ).atan();
 
                 let radius_i : f64
-                    = ( ((y_i - y_0).pow(2) + (x_i - x_0).pow(2)) as f64).sqrt();
+                    = ((y_i - y_0).powf(2.0) + (x_i - x_0).powf(2.0)).sqrt();
 
-                node_polar_coord[i] = (i, angle_i, radius_i);
+                node_polar_coord.push((i, angle_i, radius_i));
 
             }
 
@@ -278,10 +278,28 @@ impl SweepInstanceTrait for GraphInstance<'_>
         {
 
             /* Move the edge weight information. */
-            let e_weights : Vec< Vec <usize>> = match edge_weights.clone()
+            let e_weights_hmatrix : Option<Vec< Vec<usize>>> = edge_weights.clone();
+
+            let edge_weight_format : &Option<EDGE_WEIGHT_FORMAT> = &self.instance.specification.edge_weight_format;
+            let e_w_f : EDGE_WEIGHT_FORMAT = match edge_weight_format
             {
-                Some(e_vec) => e_vec,
-                _ => Vec::new(),
+                Some(w_f) => w_f.clone(),
+                _ => EDGE_WEIGHT_FORMAT::FULL_MATRIX,
+            };
+
+            let mut op_e_weights : Option< Vec< Vec<usize>>> = e_weights_hmatrix.clone();
+
+            /* Convert edge weight into full matrix. */
+            if e_w_f != EDGE_WEIGHT_FORMAT::FULL_MATRIX
+            {
+                op_e_weights =
+                    from_hmatrix_to_fmatrix(&e_weights_hmatrix, dimension, e_w_f);
+            }
+
+            let e_weights : Vec< Vec<usize>> = match op_e_weights
+            {
+                Some(ew) => ew,
+                _ => Vec::new()
             };
 
             /* Compute a list of nodes sorted by
@@ -297,7 +315,7 @@ impl SweepInstanceTrait for GraphInstance<'_>
 
             /* Compute the node which maximise the
              * value of d_n1_n3 + d_n2_n3. */
-            let mut dist_n1_n2_n3 : f64  = 0 as f64;
+            let mut dist_n1_n2_n3 : f64  = 0.0;
             let mut tmp_n3        : Node = 0;
             for i in 1..dimension
             {
@@ -325,6 +343,11 @@ impl SweepInstanceTrait for GraphInstance<'_>
             let mut cluster_n1_n2: Vec<(Node, f64)> = Vec::new();
             let mut cluster_n2_n3: Vec<(Node, f64)> = Vec::new();
             let mut cluster_n3_n1: Vec<(Node, f64)> = Vec::new();
+
+            /* Insert n1, n2, n3, one for each cluster. */
+            cluster_n1_n2.push((n1, 0.0));
+            cluster_n2_n3.push((n2, 0.0));
+            cluster_n3_n1.push((n3, 0.0));
 
             for i in 1..dimension
             {
@@ -411,15 +434,7 @@ fn compute_distance_from_nodes(
     -> f64
 {
 
-    let distance_n1_n2 : f64;
-    if e_weights.len() >= n1 && e_weights[n1].len() >= n2
-    {
-        distance_n1_n2 = e_weights[n1][n2] as f64;
-    }
-    else
-    {
-        distance_n1_n2 = e_weights[n2][n1] as f64;
-    }
+    let distance_n1_n2 : f64 = e_weights[n1][n2] as f64;
 
     return distance_n1_n2;
 
@@ -432,14 +447,19 @@ fn compute_node_list_sort_by_distance(
     -> Vec<(Node, f64)>
 {
 
-    let mut nodes_from_n1: Vec<(Node, f64)> = Vec::with_capacity(dimension - 1);
-    for i in 1..(dimension)
+    let mut nodes_from_n1: Vec<(Node, f64)> = Vec::with_capacity(dimension - 2);
+    for i in 1..(dimension - 1)
     {
+
+        if i == n1
+        {
+            continue;
+        }
 
         let n2             : Node = i;
         let distance_n1_n2 : f64  = compute_distance_from_nodes(e_weights, n1, n2);
 
-        nodes_from_n1[n2] = (n2, distance_n1_n2);
+        nodes_from_n1.push((n2, distance_n1_n2));
 
     }
 
@@ -448,5 +468,112 @@ fn compute_node_list_sort_by_distance(
     nodes_from_n1.sort_by(|(_, d1), (_, d2)| d1.partial_cmp(d2).unwrap());
 
     return nodes_from_n1;
+
+}
+
+fn compute_distance_from_nodes_coord(
+    coord : &Vec<Coord>,
+    n1    : usize,
+    n2    : usize)
+    -> f64
+{
+
+    let (n1_x, n1_y) : (f64, f64) = match coord[n1]
+    {
+        Coord::Coord2d((_, x, y)) => (x, y),
+        Coord::Coord3d((_, x, y, _)) => (x, y),
+    };
+
+    let (n2_x, n2_y) : (f64, f64) = match coord[n2]
+    {
+        Coord::Coord2d((_, x, y)) => (x, y),
+        Coord::Coord3d((_, x, y, _)) => (x, y),
+    };
+
+    return ((n1_x - n2_x).powf(2.0) + (n1_y - n2_y).powf(2.0)).sqrt();
+
+}
+
+pub(crate) fn compute_cost_of_routes(
+    instance : TSPInstance,
+    routes   : Vec< Vec<usize>>)
+    -> f64
+{
+
+    let node_number     : usize = instance.specification.dimension.clone();
+    let e_weights       : Option< Vec< Vec<usize>>> = instance.data.edge_weight_section.clone();
+    let coord           : Option< Vec <Coord>> = instance.data.node_coord_section.clone();
+    let e_weight_format : Option<EDGE_WEIGHT_FORMAT> = instance.specification.edge_weight_format.clone();
+
+    let mut result  : f64 = 0.0;
+
+    if e_weights.is_some()
+    {
+        let e_w_hmatrix : &Vec< Vec<usize>> = e_weights.as_ref().unwrap();
+        let e_w_matrix  : Vec< Vec<usize>>;
+
+        match e_weight_format
+        {
+            Some(EDGE_WEIGHT_FORMAT::FULL_MATRIX) => e_w_matrix = e_w_hmatrix.clone(),
+            Some(e_w_f) => e_w_matrix =
+                from_hmatrix_to_fmatrix(&e_weights, node_number, e_w_f).unwrap(),
+            _ => e_w_matrix = Vec::new()
+        }
+
+        for route_i in 0..routes.len()
+        {
+
+            let mut prev_index : usize = 0;
+            let route_i_len    : usize = routes[route_i].len();
+
+            for current_index in 0..routes[route_i].len()
+            {
+                if current_index == route_i_len - 1
+                {
+                    result = result + e_w_matrix[current_index][0] as f64;
+                    break;
+                }
+                else
+                {
+                    result     = result + e_w_matrix[prev_index][current_index] as f64;
+                    prev_index = current_index;
+                }
+            }
+        }
+
+    }
+    else
+    {
+
+        /* Coord should not be None. */
+        assert!(coord.is_some());
+
+        let c_vector : Vec< Coord> = coord.unwrap();
+
+        for route_i in 0..routes.len()
+        {
+
+            let mut prev_index : usize = 0;
+            let route_i_len    : usize = routes[route_i].len();
+
+            for current_index in 0..routes[route_i].len()
+            {
+
+                if current_index == route_i_len - 1
+                {
+                    result = result + compute_distance_from_nodes_coord(&c_vector, current_index, 0);
+                    break;
+                }
+                else
+                {
+                    result     = result + compute_distance_from_nodes_coord(&c_vector, prev_index, current_index);
+                    prev_index = current_index;
+                }
+            }
+        }
+
+    }
+
+    return result;
 
 }

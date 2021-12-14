@@ -1,9 +1,6 @@
 use nom::{IResult};
 use nom::bytes::complete::tag;
 use nom::character::complete::{space0, line_ending, multispace1, not_line_ending, multispace0, space1};
-use crate::tsplib_parser::keyword_values::{TYPE, EDGE_WEIGHT_TYPE, EDGE_WEIGHT_FORMAT, EDGE_DATA_FORMAT, NODE_COORD_TYPE, DISPLAY_DATE_TYPE};
-use crate::tsplib_parser::custom_types::{Coord, Node, EdgeData};
-use crate::tsplib_parser::custom_types::Coord::{Coord2d, Coord3d};
 use nom::multi::{separated_list0};
 use nom::number::complete::{double};
 use nom::combinator::{map_opt, opt};
@@ -11,7 +8,12 @@ use nom::sequence::{tuple, preceded};
 use nom::error::{Error, ErrorKind};
 use nom::Err;
 
+use crate::tsplib_parser::keyword_values::{TYPE, EDGE_WEIGHT_TYPE, EDGE_WEIGHT_FORMAT, EDGE_DATA_FORMAT, NODE_COORD_TYPE, DISPLAY_DATE_TYPE};
+use crate::tsplib_parser::custom_types::{Coord, Node, EdgeData};
+use crate::tsplib_parser::custom_types::Coord::{Coord2d, Coord3d};
 
+/* Parse the couple of key and value,
+ * used to parse the opening of a section. */
 pub(crate) fn parse_key_value<'a>(key : &'a str) -> impl Fn(&str) -> IResult<&str, &str> + 'a
 {
 
@@ -35,20 +37,6 @@ pub(crate) fn parse_key_value<'a>(key : &'a str) -> impl Fn(&str) -> IResult<&st
 
 }
 
-/* Functions invoked by the parser to
- * analyze the specification sections of
- * the instance received as input. */
-/*pub fn parse_instance_name<'a>(parsed_input : IResult<&str, &str>) -> &'a str
-{
-
-    match parsed_input
-    {
-        Ok((name_value, _)) => name_value,
-        Err(_) => ""
-    }
-
-}*/
-
 pub fn parse_instance_type(_type : &str) -> TYPE
 {
 
@@ -64,18 +52,6 @@ pub fn parse_instance_type(_type : &str) -> TYPE
     }
 
 }
-
-/*
-pub fn parse_instance_comment<'a>(parsed_input : IResult<&'a str, &str>) -> &'a str
-{
-
-    match parsed_input
-    {
-        Ok((comment_value, _)) => comment_value,
-        Err(_) => ""
-    }
-
-} */
 
 pub fn parse_instance_dimension(_dimension : &str) -> usize
 {
@@ -216,8 +192,8 @@ pub fn parse_coord_2d(coord : Vec<f64>) -> Option<Coord>
     match coord.len()
     {
         3 => Some(Coord2d((coord[0] as usize,
-                          coord[1] as usize,
-                          coord[2] as usize))),
+                          coord[1],
+                          coord[2]))),
         _ => None,
     }
 
@@ -229,9 +205,9 @@ pub fn parse_coord_3d(coord : Vec<f64>) -> Option<Coord>
     match coord.len()
     {
         4 => Some(Coord3d((coord[0] as usize,
-                          coord[1] as usize,
-                          coord[2] as usize,
-                          coord[3] as usize))),
+                          coord[1],
+                          coord[2],
+                          coord[3]))),
         _ => None,
     }
 
@@ -429,7 +405,7 @@ pub fn order_node_coord(
     /* Initialize sorted_node_coord. */
     for _ in 0..sorted_node_coord.capacity()
     {
-        sorted_node_coord.push(Coord::Coord2d((0, 0, 0)));
+        sorted_node_coord.push(Coord::Coord2d((0, 0.0, 0.0)));
     }
 
     if !node_coord.is_none()
@@ -499,104 +475,6 @@ pub fn order_node_demand_section(
     return result;
 
 }
-
-/*
-pub fn order_edge_list(
-    edge_data : &Option< Vec<EdgeData>>)
-    -> Option< Vec<Edge>>
-{
-
-    let result : Option< Vec<Edge>>;
-
-    result = match edge_data
-    {
-
-        Some(edge_data_values) => {
-
-            let edge_number      : usize     = edge_data_values.len();
-            let mut sorted_edges : Vec<Edge> = Vec::with_capacity(edge_number);
-
-            for i in 0..edge_number
-            {
-
-                let edge_data_i : EdgeData = edge_data_values[i].clone();
-                match edge_data_i
-                {
-                    EdgeData::Edge((n1, n2)) => sorted_edges[i] = (n1, n2),
-                    EdgeData::Adj(_) => {}
-                };
-
-            }
-
-            sorted_edges.sort_by_key(|k_v| k_v.0);
-
-            Some(sorted_edges)
-
-        }
-        _ => None,
-
-    };
-
-    return result;
-
-}
-*/
-
-
-/*
-pub fn order_adj_list(
-    edge_data : &Option< Vec<EdgeData>>,
-    dimension : usize)
-    -> Option< Vec<Adj>>
-{
-
-    let result : Option< Vec<Adj>>;
-
-    result = match edge_data
-    {
-        Some(edge_data_values) => {
-
-            let mut sorted_edge_data : Vec<Adj>
-                = Vec::with_capacity(dimension);
-
-            let mut adj_vec: Vec<Adj> =
-                Vec::with_capacity(dimension);
-            for i in 0..dimension
-            {
-
-                let edge_data_i : EdgeData = edge_data_values[i].clone();
-
-                match edge_data_i
-                {
-                    EdgeData::Adj(node_vec ) => adj_vec[i] = node_vec,
-                    _ => {}
-                };
-
-            }
-
-            for i in 0..dimension
-            {
-
-                let adj_vec_i  : Adj
-                    = adj_vec[i].clone();
-                let node_id   : Node = adj_vec_i[0];
-
-                sorted_edge_data[node_id] = adj_vec_i;
-                sorted_edge_data[node_id].sort();
-
-            }
-
-            Some(sorted_edge_data)
-
-        }
-        _ => None,
-
-    };
-
-    return result;
-
-}
-*/
 
 pub fn compute_edge_weight_matrix(
     edge_weight_section : Option< Vec< Vec<usize>>>,

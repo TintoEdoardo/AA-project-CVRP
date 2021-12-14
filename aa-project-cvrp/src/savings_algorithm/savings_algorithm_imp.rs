@@ -51,7 +51,7 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
         let mut is_node_terminal : Vec<bool>        = Vec::with_capacity(node_number);
 
         /* Initialize routes, node_to_routes and routes_weight. */
-        for _ in 0..node_number
+        for _i in 0..node_number
         {
             routes.push(Vec::new());
             node_to_routes.push(0);
@@ -133,20 +133,6 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
                     continue;
                 }
 
-                //DEBUG
-                println!("\nNEW ROUTE COMPUTATION");
-                print!("\nRoute of i (= {}) : ", i);
-                for j in 0..routes[route_of_i].len()
-                {
-                    print!(" {nj}, ", nj = routes[route_of_i][j]);
-                }
-                print!("\nRoute of j (= {}) : ", j);
-                for j in 0..routes[route_of_j].len()
-                {
-                    print!(" {nj}, ", nj = routes[route_of_j][j]);
-                }
-                print!("\n");
-
                 /* We should grant that the two nodes i and j
                  * are consecutive in the new route. */
                 let first_node_in_route_of_i : usize = *routes[route_of_i].first().unwrap();
@@ -220,18 +206,6 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
                 {
                     is_node_terminal[j] = false;
                 }
-
-                //DEBUG
-                println!("NEW ROUTE ");
-                print!(" - route {i} : ", i = route_of_i);
-
-                //DEBUG
-                for j in 0..routes[route_of_i].len()
-                {
-                    print!(" {nj}, ", nj = routes[route_of_i][j]);
-                }
-                print!("\n");
-                println!("---------------");
 
             }
 

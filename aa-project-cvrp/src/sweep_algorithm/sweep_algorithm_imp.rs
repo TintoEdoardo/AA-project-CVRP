@@ -7,8 +7,7 @@ use crate::algorithm_interface::CVRPSolver;
  * trait and the CVRPSolver trait. */
 pub struct SweepSolver<'a>
 {
-
-    instance : &'a dyn SweepInstanceTrait,
+    pub(crate) instance : &'a dyn SweepInstanceTrait,
 
 }
 
@@ -31,7 +30,7 @@ impl<'a> SweepSolver<'a>
 impl<'a> CVRPSolver for SweepSolver<'a>
 {
 
-    fn solve(&self) -> Vec<Vec<usize>> {
+    fn solve(&self) -> Vec< Vec<usize>> {
 
         let instance : &dyn SweepInstanceTrait = self.instance;
 
@@ -56,7 +55,8 @@ impl<'a> CVRPSolver for SweepSolver<'a>
 
             /* Iterate over the remaining nodes until
              * there is capacity available. */
-            while remaining_capacity > 0
+            while remaining_capacity > 0 &&
+                !remaining_nodes.is_empty()
             {
 
                 let current_node      : usize      = remaining_nodes.pop().unwrap();
@@ -71,13 +71,16 @@ impl<'a> CVRPSolver for SweepSolver<'a>
                 else
                 {
 
-                    /* If the capacity is not sufficient, for the
-                     * current node, we consider the route complete. */
-                    remaining_capacity = -1;
-
                     /* Eventually, here we can execute a TSP algorithm
                      * over the nodes inside the already computed route,
                      * in order to increase the quality of the result. */
+
+                    /* The current node is inserted in the same position. */
+                    remaining_nodes.push(current_node);
+
+                    /* If the capacity is not sufficient for the
+                     * current node, we consider the route complete. */
+                    remaining_capacity = -1;
 
                 }
 

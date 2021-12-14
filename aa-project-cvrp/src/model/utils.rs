@@ -1,5 +1,5 @@
 /* Utility functions used for different
- * tsplib type instances. */
+ * tsplib instances. */
 
 use crate::tsplib_parser::custom_types::{Coord};
 use crate::tsplib_parser::keyword_values::{EDGE_WEIGHT_FORMAT};
@@ -115,6 +115,8 @@ pub(crate) fn compute_savings_fmatrix(
     savings         : &mut Vec<(usize, usize, usize)>)
 {
 
+    /* For now, it is sufficient to call
+     * compute_savings_explicit. */
     compute_savings_explicit(
         edge_weight,
         node_number,
@@ -122,74 +124,7 @@ pub(crate) fn compute_savings_fmatrix(
 
 }
 
-/* Computes savings for instance
- * where the weight of each edge
- * is expressed in semi-full matrix. */
-/*
-pub(crate) fn compute_savings_hmatrix(
-    edge_weight     : &Option< Vec< Vec<usize>>>,
-    node_number     : usize,
-    is_upper        : bool,
-    savings         : &mut Vec<(usize, usize, usize)>)
-{
-
-    match edge_weight {
-
-        Some(e_weight) =>
-            {
-
-                for i in 1..(node_number - 1)
-                {
-
-                    let range : Range<usize>;
-
-                    if is_upper
-                    {
-
-                        /* Omit the node i and the depot. */
-                        range = i..(node_number - 1 - 1);
-
-                    }
-                    else
-                    {
-
-                        range = 1..i;
-
-                    }
-
-                    for j in range
-                    {
-
-                        let weight_i_j : usize = e_weight[i][j];
-
-                        /* The edge is considered only
-                         * if the weight is not 0. */
-                        if weight_i_j != 0
-                        {
-
-                            let d_0_i : usize = e_weight[0][i];
-                            let d_0_j : usize = e_weight[0][j];
-                            let d_i_j : usize = e_weight[i][j];
-
-                            /* Compute the saving for the edge between i, j. */
-                            let s : usize = (d_0_i + d_0_j).checked_sub(d_i_j).unwrap_or(0);
-
-                            savings.push((i, j, s));
-
-                        }
-
-                    }
-
-                }
-
-            }
-
-        _ => (),
-    }
-
-}
- */
-
+/* Convert half matrix into full matrix. */
 pub(crate) fn from_hmatrix_to_fmatrix(
     edge_weight     : &Option< Vec< Vec<usize>>>,
     node_number     : usize,
@@ -203,7 +138,7 @@ pub(crate) fn from_hmatrix_to_fmatrix(
         {
 
             let mut result : Vec< Vec<usize>> = Vec::with_capacity(node_number);
-            for _i in 0..(node_number - 1)
+            for _i in 0..(node_number)
             {
                 result.push(Vec::with_capacity(node_number));
             }
@@ -211,9 +146,9 @@ pub(crate) fn from_hmatrix_to_fmatrix(
             if e_weight_format == EDGE_WEIGHT_FORMAT::UPPER_ROW ||
                 e_weight_format == EDGE_WEIGHT_FORMAT::UPPER_DIAG_ROW
             {
-                for i in 0..(node_number - 1)
+                for i in 0..(node_number)
                 {
-                    for j in 0..(node_number - 1)
+                    for j in 0..(node_number)
                     {
                         if i > j
                         {
@@ -236,12 +171,12 @@ pub(crate) fn from_hmatrix_to_fmatrix(
             else if e_weight_format == EDGE_WEIGHT_FORMAT::LOWER_ROW ||
                 e_weight_format == EDGE_WEIGHT_FORMAT::LOWER_DIAG_ROW
             {
-                for i in (0..(node_number - 1)).rev()
+                for i in (0..(node_number)).rev()
                 {
 
                     let mut tail_of_row_i : Vec<usize> = Vec::new();
 
-                    for j in (0..(node_number - 1)).rev()
+                    for j in (0..(node_number)).rev()
                     {
                         if i < j
                         {
@@ -260,6 +195,7 @@ pub(crate) fn from_hmatrix_to_fmatrix(
                             let mut res_i : Vec<usize>  = result[i].clone();
                             e_w_i.append(&mut res_i);
                             result[i] = e_w_i;
+                            break;
                         }
                     }
                 }
@@ -284,7 +220,6 @@ pub(crate) fn from_hmatrix_to_fmatrix(
             {
                 result.clear();
             }
-
 
             if result.len() > 0
             {

@@ -1,19 +1,19 @@
-/*
-
- */
+/* Parser for TSPLIB 95 instances. */
 
 use nom::combinator::opt;
 use nom::branch::permutation;
+use nom::multi::many0;
+use nom::{IResult};
+use nom::error::ErrorKind;
+use nom::error::Error;
+use nom::bytes::complete::tag;
+
 use crate::tsplib_parser::keywords;
 use crate::tsplib_parser::keyword_values;
 use crate::tsplib_parser::problem_instance::{TSPInstance, Specification, Data};
 use crate::tsplib_parser::parser_functions::{parse_key_value, parse_instance_type, parse_instance_dimension, parse_instance_edge_weight_type, parse_instance_edge_weight_format, parse_instance_edge_data_format, parse_instance_display_data_type, parse_instance_node_coord_type, parse_instance_section, parse_coord_3d, parse_depot, parse_coord_2d, parse_edge, parse_adj_vec, parse_node_demand, parse_tour, parse_edge_weight, order_node_coord, order_node_demand_section, compute_edge_weight_matrix, parse_instance_capacity};
-use nom::multi::many0;
-use nom::{IResult};
 use crate::tsplib_parser::custom_types::{Coord, EdgeData};
-use nom::error::ErrorKind;
-use nom::error::Error;
-use nom::bytes::complete::tag;
+
 
 pub fn parse(input : &str) -> TSPInstance
 {
@@ -28,24 +28,6 @@ pub fn parse(input : &str) -> TSPInstance
         Ok((input, spec)) => (input, Some(spec)),
         _ => ("", None),
     };
-
-    //DEBUG
-    /*match specification.clone()
-    {
-        Some(s) =>
-            {
-                println!("Result of '{k}' output is: {ou}", k = "NAME", ou = s.name);
-                println!("Result of '{k}' output is: {ou}", k = "DIMENSION", ou = s.dimension);
-                println!("Result of '{k}' output is: {ou}", k = "EDGE_WEIGHT_TYPE", ou = (s.edge_weight_type == EUC_2D));
-                println!("Result of '{k}' output is: {ou}", k = "TYPE", ou = s.data_type == CVRP);
-                println!("Result of '{k}' output is: {ou}", k = "COMMENT", ou = s.comment.concat());
-                println!("Result of '{k}' output is: {ou}", k = "CAPACITY", ou = s.capacity);
-                println!("Result of '{k}' output is: {ou}", k = "DISPLAY", ou = s.display_data_type == NO_DISPLAY);
-                println!("Result of '{k}' output is: {ou}", k = "NODE_COORD_TYPE", ou = s.node_coord_type == NO_COORDS);
-
-            }
-        None => println!("Specification is None"),
-    }*/
 
     /* Compute data section. */
     let data_result : IResult<&str, Data> =
@@ -334,51 +316,5 @@ fn parse_data<'a>(input : &'a str, specification : &'a Specification) -> IResult
     };
 
     return Ok(("", data));
-
-    /*
-    match permutation((
-        opt(parse_instance_section(keywords::NODE_COORD_SECTION, node_coord_parser)),
-        opt(parse_instance_section(keywords::DEPOT_SECTION, parse_depot)),
-        opt(parse_instance_section(keywords::DEMAND_SECTION, parse_node_demand)),
-        opt(parse_instance_section(keywords::EDGE_DATA_SECTION, edge_data_parser)),
-        opt(parse_instance_section(keywords::FIXED_EDGE_SECTION, parse_edge)),
-        opt(parse_instance_section(keywords::DISPLAY_DATA_SECTION , parse_coord_2d)),
-        opt(parse_instance_section(keywords::TOUR_SECTION, parse_tour)),
-        opt(parse_instance_section(keywords::EDGE_WEIGHT_SECTION, parse_edge_weight)),
-        tag("EOF")
-    ))(input)
-    {
-        Ok((_, (
-            _node_coord,
-            _depots,
-            _demands,
-            _edges_data,
-            _fixed_edges,
-            _display_data,
-            _tours,
-            _edges_weight,
-            _eof)))
-        =>
-            {
-                data = Data
-                {
-                    node_coord_section   : order_node_coord(&_node_coord, dimension),
-                    depot_section        : _depots.clone(),
-                    demand_section       : order_node_demand_section(&_demands, dimension),
-                    edge_data_section    : _edges_data.clone(),
-                    fixed_edges_section  : _fixed_edges.clone(),
-                    display_data_section : _display_data.clone(),
-                    tour_section         : _tours.clone(),
-                    edge_weight_section  : compute_edge_weight_matrix(_edges_weight, edge_weight_format, *dimension)
-                };
-
-
-                Ok(("", data))
-
-            }
-        _ => Err(nom::Err::Error(Error { input, code: ErrorKind::Permutation })),
-    }
-
-     */
 
 }

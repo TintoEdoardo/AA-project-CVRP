@@ -14,8 +14,8 @@ pub type Adj  = Vec<Node>;
 pub enum Coord
 {
 
-    Coord2d((usize, usize, usize)),
-    Coord3d((usize, usize, usize, usize)),
+    Coord2d((usize, f64, f64)),
+    Coord3d((usize, f64, f64, f64)),
 
 }
 

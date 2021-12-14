@@ -1,5 +1,5 @@
-/* This trait define the method to
- * compute savings, available only
+/* This trait define the methods for
+ * computing savings, available only
  * for GraphInstance when explicitly
  * implemented. */
 pub trait SavingsInstanceTrait
