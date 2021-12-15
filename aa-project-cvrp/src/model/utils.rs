@@ -45,6 +45,34 @@ pub(crate) fn compute_savings_explicit(
 
 }
 
+/* Compute the euclidean distance
+ * between two points. */
+pub(crate) fn compute_distance_euc(
+    node_1_coord : &Coord,
+    node_2_coord : &Coord)
+    -> f64
+{
+
+    /* Extract the coord. */
+    let (x_1, y_1) = match node_1_coord
+    {
+        Coord::Coord2d((_, _x, _y)) => (_x, _y),
+        Coord::Coord3d((_, _x, _y, _)) => (_x, _y)
+    };
+    let (x_2, y_2) = match node_2_coord
+    {
+        Coord::Coord2d((_, _x, _y)) => (_x, _y),
+        Coord::Coord3d((_, _x, _y, _)) => (_x, _y)
+    };
+
+    /* Compute distance. */
+    let dist_1_2 : f64 =
+        ((x_1 - x_2).powf(2.0) + (y_1 - y_2).powf(2.0)).sqrt();
+
+    return dist_1_2;
+
+}
+
 /* Computes savings for instance
  * where the weight of each edge
  * is expressed as euclidean distance. */
@@ -59,35 +87,20 @@ pub(crate) fn compute_savings_coord(
         Some(n_coord) =>
             {
 
-                let (x_0, y_0) : (f64, f64) = match n_coord[0] {
-                    Coord::Coord2d((_, x, y)) => (x, y),
-                    Coord::Coord3d(_) => (0.0, 0.0),
-                };
-
                 for i in 1..node_number
                 {
-
-                    let (x_i, y_i) : (f64, f64) = match n_coord[i] {
-                        Coord::Coord2d((_, x, y)) => (x, y),
-                        Coord::Coord3d(_) => (0.0, 0.0),
-                    };
 
                     for j in (i + 1)..node_number
                     {
 
-                        let (x_j, y_j) : (f64, f64) = match n_coord[j] {
-                            Coord::Coord2d((_, x, y)) => (x, y),
-                            Coord::Coord3d(_) => (0.0, 0.0),
-                        };
-
                         let d_0_i : f64 =
-                            ((x_0 - x_i).powf(2.0) + (y_0 - y_i).powf(2.0)).sqrt();
+                            compute_distance_euc(&n_coord[0], &n_coord[i]);
 
                         let d_0_j : f64 =
-                            ((x_0 - x_j).powf(2.0) + (y_0 - y_j).powf(2.0)).sqrt();
+                            compute_distance_euc(&n_coord[0], &n_coord[j]);
 
                         let d_i_j : f64 =
-                            ((x_i - x_j).powf(2.0) + (y_i - y_j).powf(2.0)).sqrt();
+                            compute_distance_euc(&n_coord[i], &n_coord[j]);
 
                         /* Compute the saving for the edge between i, j. */
                         let s : usize = (d_0_i + d_0_j - d_i_j) as usize;
@@ -106,6 +119,63 @@ pub(crate) fn compute_savings_coord(
 
 }
 
+/* Compute the geo distance
+ * between two points. */
+pub(crate) fn compute_distance_geo(
+    node_1_coord : &Coord,
+    node_2_coord : &Coord)
+    -> f64
+{
+
+    /* Extract the coord. */
+    let (x_1, y_1) = match node_1_coord
+    {
+        Coord::Coord2d((_, _x, _y)) => (_x, _y),
+        Coord::Coord3d((_, _x, _y, _)) => (_x, _y)
+    };
+    let (x_2, y_2) = match node_2_coord
+    {
+        Coord::Coord2d((_, _x, _y)) => (_x, _y),
+        Coord::Coord3d((_, _x, _y, _)) => (_x, _y)
+    };
+
+    /* Compute the latitude of node 1. */
+    let node_1_lat_deg : f64 = x_1.floor();
+    let node_1_lat_min : f64 = x_1 - node_1_lat_deg;
+    let latitude_1     : f64 =
+        std::f64::consts::PI * (node_1_lat_deg + 5.0 * node_1_lat_min / 3.0) / 180.0;
+
+    /* Compute the latitude of node 2. */
+    let node_2_lat_deg : f64 = x_2.floor();
+    let node_2_lat_min : f64 = x_2 - node_2_lat_deg;
+    let latitude_2     : f64 =
+        std::f64::consts::PI * (node_2_lat_deg + 5.0 * node_2_lat_min / 3.0) / 180.0;
+
+    /* Compute the longitude of node 1. */
+    let node_1_lon_deg : f64 = y_1.floor();
+    let node_1_lon_min : f64 = y_1 - node_1_lon_deg;
+    let longitude_1     : f64 =
+        std::f64::consts::PI * (node_1_lon_deg + 5.0 * node_1_lon_min / 3.0) / 180.0;
+
+    /* Compute the longitude of node 2. */
+    let node_2_lon_deg : f64 = y_2.floor();
+    let node_2_lon_min : f64 = y_2 - node_2_lon_deg;
+    let longitude_2     : f64 =
+        std::f64::consts::PI * (node_2_lon_deg + 5.0 * node_2_lon_min / 3.0) / 180.0;
+
+    let RRR : f64 = 6378.388;
+    let q1  : f64 = (longitude_1 - longitude_2).cos();
+    let q2  : f64 = (latitude_1 - latitude_2).cos();
+    let q3  : f64 = (latitude_1 + latitude_2).cos();
+
+    /* Compute distance. */
+    let dist_1_2 : f64 =
+        (RRR * (0.5 * ((1.0 + q1) * q2 - (1.0 - q1) * q3)).acos() + 1.0).ceil();
+
+    return dist_1_2;
+
+}
+
 /* Computes savings for instance
  * where the weight of each edge
  * is expressed as geographical distance. */
@@ -120,35 +190,20 @@ pub(crate) fn compute_savings_geo(
         Some(n_coord) =>
             {
 
-                let (x_0, y_0) : (f64, f64) = match n_coord[0] {
-                    Coord::Coord2d((_, x, y)) => (x, y),
-                    Coord::Coord3d(_) => (0.0, 0.0),
-                };
-
                 for i in 1..node_number
                 {
-
-                    let (x_i, y_i) : (f64, f64) = match n_coord[i] {
-                        Coord::Coord2d((_, x, y)) => (x, y),
-                        Coord::Coord3d(_) => (0.0, 0.0),
-                    };
 
                     for j in (i + 1)..node_number
                     {
 
-                        let (x_j, y_j) : (f64, f64) = match n_coord[j] {
-                            Coord::Coord2d((_, x, y)) => (x, y),
-                            Coord::Coord3d(_) => (0.0, 0.0),
-                        };
-
                         let d_0_i : f64 =
-                            ((x_0 - x_i).powf(2.0) + (y_0 - y_i).powf(2.0)).sqrt();
+                            compute_distance_geo(&n_coord[0], &n_coord[i]);
 
                         let d_0_j : f64 =
-                            ((x_0 - x_j).powf(2.0) + (y_0 - y_j).powf(2.0)).sqrt();
+                            compute_distance_geo(&n_coord[0], &n_coord[j]);
 
                         let d_i_j : f64 =
-                            ((x_i - x_j).powf(2.0) + (y_i - y_j).powf(2.0)).sqrt();
+                            compute_distance_geo(&n_coord[i], &n_coord[j]);
 
                         /* Compute the saving for the edge between i, j. */
                         let s : usize = (d_0_i + d_0_j - d_i_j) as usize;

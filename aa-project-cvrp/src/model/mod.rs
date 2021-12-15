@@ -9,7 +9,7 @@ mod utils;
 use crate::tsplib_parser::problem_instance::TSPInstance;
 use crate::sweep_algorithm::sweep_instance_trait::SweepInstanceTrait;
 use crate::savings_algorithm::savings_instance_trait::SavingsInstanceTrait;
-use crate::model::utils::{compute_savings_coord, compute_savings_fmatrix, from_hmatrix_to_fmatrix};
+use crate::model::utils::{compute_savings_coord, compute_savings_fmatrix, from_hmatrix_to_fmatrix, compute_savings_geo, compute_distance_geo, compute_distance_euc};
 use crate::tsplib_parser::keyword_values::{EDGE_WEIGHT_TYPE, EDGE_WEIGHT_FORMAT};
 use crate::tsplib_parser::custom_types::{Node, Coord};
 use rand::Rng;
@@ -63,7 +63,7 @@ impl SavingsInstanceTrait for GraphInstance<'_>
                     &mut savings),
 
             (EDGE_WEIGHT_TYPE::GEO, _, _) =>
-                compute_savings_coord(
+                compute_savings_geo(
                     &self.instance.data.node_coord_section,
                     node_number,
                     &mut savings),
@@ -500,10 +500,11 @@ pub(crate) fn compute_cost_of_routes(
     -> f64
 {
 
-    let node_number     : usize = instance.specification.dimension.clone();
-    let e_weights       : Option< Vec< Vec<usize>>> = instance.data.edge_weight_section.clone();
-    let coord           : Option< Vec <Coord>> = instance.data.node_coord_section.clone();
+    let node_number     : usize                      = instance.specification.dimension.clone();
+    let e_weights       : Option< Vec< Vec<usize>>>  = instance.data.edge_weight_section.clone();
+    let coord           : Option< Vec <Coord>>       = instance.data.node_coord_section.clone();
     let e_weight_format : Option<EDGE_WEIGHT_FORMAT> = instance.specification.edge_weight_format.clone();
+    let e_weight_type   : EDGE_WEIGHT_TYPE           = instance.specification.edge_weight_type.clone();
 
     let mut result  : f64 = 0.0;
 
@@ -560,20 +561,32 @@ pub(crate) fn compute_cost_of_routes(
         /* Coord should not be None. */
         assert!(coord.is_some());
 
+        /* Check if the Coord ar eucledean
+         * or geographical. */
+        let distance_function : fn(&Coord, &Coord) -> f64;
+        if e_weight_type == EDGE_WEIGHT_TYPE::GEO
+        {
+            distance_function = compute_distance_geo;
+        }
+        else
+        {
+            distance_function = compute_distance_euc;
+        }
+
         let c_vector : Vec< Coord> = coord.unwrap();
 
         for route_i in 0..routes.len()
         {
 
             /* Add the cost of the first edge. */
-            result = result + compute_distance_from_nodes_coord(&c_vector, 0, routes[route_i][0]).ceil();
+            result = result + distance_function(&c_vector[0], &c_vector[routes[route_i][0]]);
 
             let mut prev_index    : usize = 0;
             let mut previous_node : usize = prev_index;
             let route_i_len       : usize = routes[route_i].len();
 
             println!("    Route{}: ", route_i);
-            print!("    c-{} ", compute_distance_from_nodes_coord(&c_vector, 0, routes[route_i][0]).ceil());
+            print!("    c-{} ", distance_function(&c_vector[0], &c_vector[routes[route_i][0]]));
             for current_index in 0..routes[route_i].len()
             {
 
@@ -581,14 +594,14 @@ pub(crate) fn compute_cost_of_routes(
                 let current_node  : usize = routes[route_i][current_index];
                 if current_index == route_i_len - 1
                 {
-                    print!("    c-{} ", compute_distance_from_nodes_coord(&c_vector, current_node, 0).ceil());
-                    result = result + compute_distance_from_nodes_coord(&c_vector, current_node, 0).ceil();
+                    print!("    c-{} ", distance_function(&c_vector[current_node], &c_vector[0]));
+                    result = result + distance_function(&c_vector[current_node], &c_vector[0]);
                     break;
                 }
                 else
                 {
-                    print!("    c-{} ", compute_distance_from_nodes_coord(&c_vector, previous_node, current_node).ceil());
-                    result        = result + compute_distance_from_nodes_coord(&c_vector, previous_node, current_node).ceil();
+                    print!("    c-{} ", distance_function(&c_vector[previous_node], &c_vector[current_node]));
+                    result        = result + distance_function(&c_vector[previous_node], &c_vector[current_node]);
                     prev_index    = current_index;
                     previous_node = routes[route_i][prev_index];
                 }
