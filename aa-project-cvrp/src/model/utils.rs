@@ -18,10 +18,10 @@ pub(crate) fn compute_savings_explicit(
         Some(e_weight) =>
             {
 
-                for i in 1..(node_number - 1)
+                for i in 1..node_number
                 {
 
-                    for j in (i + 1)..(node_number - 1)
+                    for j in (i + 1)..node_number
                     {
 
                         let d_0_i : usize = e_weight[0][i];
@@ -59,35 +59,35 @@ pub(crate) fn compute_savings_coord(
         Some(n_coord) =>
             {
 
-                let (x_0, y_0) : (f32, f32) = match n_coord[0] {
-                    Coord::Coord2d((_, x, y)) => (x as f32, y as f32),
-                    Coord::Coord3d(_) => (0 as f32, 0 as f32),
+                let (x_0, y_0) : (f64, f64) = match n_coord[0] {
+                    Coord::Coord2d((_, x, y)) => (x, y),
+                    Coord::Coord3d(_) => (0.0, 0.0),
                 };
 
                 for i in 1..node_number
                 {
 
-                    let (x_i, y_i) : (f32, f32) = match n_coord[i] {
-                        Coord::Coord2d((_, x, y)) => (x as f32, y as f32),
-                        Coord::Coord3d(_) => (0 as f32, 0 as f32),
+                    let (x_i, y_i) : (f64, f64) = match n_coord[i] {
+                        Coord::Coord2d((_, x, y)) => (x, y),
+                        Coord::Coord3d(_) => (0.0, 0.0),
                     };
 
                     for j in (i + 1)..node_number
                     {
 
-                        let (x_j, y_j) : (f32, f32) = match n_coord[j] {
-                            Coord::Coord2d((_, x, y)) => (x as f32, y as f32),
-                            Coord::Coord3d(_) => (0 as f32, 0 as f32),
+                        let (x_j, y_j) : (f64, f64) = match n_coord[j] {
+                            Coord::Coord2d((_, x, y)) => (x, y),
+                            Coord::Coord3d(_) => (0.0, 0.0),
                         };
 
-                        let d_0_i : f32 =
-                            ((x_0 - x_i).powf(2 as f32) + (y_0 - y_i).powf(2 as f32)).sqrt();
+                        let d_0_i : f64 =
+                            ((x_0 - x_i).powf(2.0) + (y_0 - y_i).powf(2.0)).sqrt();
 
-                        let d_0_j : f32 =
-                            ((x_0 - x_j).powf(2 as f32) + (y_0 - y_j).powf(2 as f32)).sqrt();
+                        let d_0_j : f64 =
+                            ((x_0 - x_j).powf(2.0) + (y_0 - y_j).powf(2.0)).sqrt();
 
-                        let d_i_j : f32 =
-                            ((x_i - x_j).powf(2 as f32) + (y_i - y_j).powf(2 as f32)).sqrt();
+                        let d_i_j : f64 =
+                            ((x_i - x_j).powf(2.0) + (y_i - y_j).powf(2.0)).sqrt();
 
                         /* Compute the saving for the edge between i, j. */
                         let s : usize = (d_0_i + d_0_j - d_i_j) as usize;
@@ -105,6 +105,69 @@ pub(crate) fn compute_savings_coord(
     }
 
 }
+
+/* Computes savings for instance
+ * where the weight of each edge
+ * is expressed as geographical distance. */
+pub(crate) fn compute_savings_geo(
+    node_coord      : &Option< Vec<Coord>>,
+    node_number     : usize,
+    savings         : &mut Vec<(usize, usize, usize)>)
+{
+
+    match node_coord {
+
+        Some(n_coord) =>
+            {
+
+                let (x_0, y_0) : (f64, f64) = match n_coord[0] {
+                    Coord::Coord2d((_, x, y)) => (x, y),
+                    Coord::Coord3d(_) => (0.0, 0.0),
+                };
+
+                for i in 1..node_number
+                {
+
+                    let (x_i, y_i) : (f64, f64) = match n_coord[i] {
+                        Coord::Coord2d((_, x, y)) => (x, y),
+                        Coord::Coord3d(_) => (0.0, 0.0),
+                    };
+
+                    for j in (i + 1)..node_number
+                    {
+
+                        let (x_j, y_j) : (f64, f64) = match n_coord[j] {
+                            Coord::Coord2d((_, x, y)) => (x, y),
+                            Coord::Coord3d(_) => (0.0, 0.0),
+                        };
+
+                        let d_0_i : f64 =
+                            ((x_0 - x_i).powf(2.0) + (y_0 - y_i).powf(2.0)).sqrt();
+
+                        let d_0_j : f64 =
+                            ((x_0 - x_j).powf(2.0) + (y_0 - y_j).powf(2.0)).sqrt();
+
+                        let d_i_j : f64 =
+                            ((x_i - x_j).powf(2.0) + (y_i - y_j).powf(2.0)).sqrt();
+
+                        /* Compute the saving for the edge between i, j. */
+                        let s : usize = (d_0_i + d_0_j - d_i_j) as usize;
+
+                        savings.push((i, j, s));
+
+                    }
+
+                }
+
+            }
+
+        _ => ()
+
+    }
+
+}
+
+
 
 /* Computes savings for instance
  * where the weight of each edge
@@ -138,32 +201,33 @@ pub(crate) fn from_hmatrix_to_fmatrix(
         {
 
             let mut result : Vec< Vec<usize>> = Vec::with_capacity(node_number);
-            for _i in 0..(node_number)
+            for i in 0..node_number
             {
                 result.push(Vec::with_capacity(node_number));
+                for _j in 0..node_number
+                {
+                    result[i].push(0);
+                }
             }
 
             if e_weight_format == EDGE_WEIGHT_FORMAT::UPPER_ROW ||
                 e_weight_format == EDGE_WEIGHT_FORMAT::UPPER_DIAG_ROW
             {
-                for i in 0..(node_number)
+                for i in 0..node_number
                 {
-                    for j in 0..(node_number)
+                    for j in 0..node_number
                     {
-                        if i > j
+                        if i < j
                         {
-                            let res_i_j : usize = result[j][i].clone();
-                            result[i].push(res_i_j);
+                            result[i][j] = e_weight[i][j - i - 1].clone();
                         }
                         else if i == j
                         {
-                            result[i].push(0);
+                            result[i][j] = 0;
                         }
-                        else if i < j
+                        else if i > j
                         {
-                            let mut res_i: Vec<usize> = e_weight[i].clone();
-                            result[i].append(&mut res_i);
-                            break;
+                            result[i][j] = e_weight[j][i -j - 1].clone();
                         }
                     }
                 }
@@ -171,31 +235,22 @@ pub(crate) fn from_hmatrix_to_fmatrix(
             else if e_weight_format == EDGE_WEIGHT_FORMAT::LOWER_ROW ||
                 e_weight_format == EDGE_WEIGHT_FORMAT::LOWER_DIAG_ROW
             {
-                for i in (0..(node_number)).rev()
+                for i in 0..node_number
                 {
 
-                    let mut tail_of_row_i : Vec<usize> = Vec::new();
-
-                    for j in (0..(node_number)).rev()
+                    for j in 0..node_number
                     {
                         if i < j
                         {
-                            let res_i_j : usize = e_weight[j][i].clone();
-                            tail_of_row_i.push(res_i_j);
+                            result[i][j] = e_weight[j][i].clone();
                         }
                         else if i == j
                         {
-                            tail_of_row_i.push(0);
-                            tail_of_row_i.reverse();
-                            result[i].append(&mut tail_of_row_i.clone());
+                            result[i][j] = 0;
                         }
-                        else if i > j
+                        else
                         {
-                            let mut e_w_i : Vec<usize>  = e_weight[i].clone();
-                            let mut res_i : Vec<usize>  = result[i].clone();
-                            e_w_i.append(&mut res_i);
-                            result[i] = e_w_i;
-                            break;
+                            result[i][j] = e_weight[i][j].clone();
                         }
                     }
                 }

@@ -55,13 +55,13 @@ impl<'a> CVRPSolver for SweepSolver<'a>
 
             /* Iterate over the remaining nodes until
              * there is capacity available. */
-            while remaining_capacity > 0 &&
+            while remaining_capacity >= 0 &&
                 !remaining_nodes.is_empty()
             {
 
                 let current_node      : usize      = remaining_nodes.pop().unwrap();
 
-                if (nodes_demand[current_node] as i64) < remaining_capacity
+                if (nodes_demand[current_node] as i64) <= remaining_capacity
                 {
 
                     current_route.push(current_node);

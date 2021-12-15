@@ -489,13 +489,13 @@ pub fn compute_edge_weight_matrix(
         EDGE_WEIGHT_FORMAT::FULL_MATRIX    => (0..dimension).map(|_| (0..dimension).collect()).collect(),
         EDGE_WEIGHT_FORMAT::LOWER_ROW      => (1..dimension).map(|index| (0..(index - 1)).collect()).collect(),
         EDGE_WEIGHT_FORMAT::UPPER_COL      => (1..dimension).map(|index| (0..(index - 1)).collect()).collect(),
-        EDGE_WEIGHT_FORMAT::LOWER_DIAG_ROW => (0..dimension).map(|index| (0..index).collect()).collect(),
-        EDGE_WEIGHT_FORMAT::UPPER_DIAG_COL => (0..dimension).map(|index| (0..index).collect()).collect(),
+        EDGE_WEIGHT_FORMAT::LOWER_DIAG_ROW => (0..dimension).map(|index| (0..index + 1).collect()).collect(),
+        EDGE_WEIGHT_FORMAT::UPPER_DIAG_COL => (0..dimension).map(|index| (0..index + 1).collect()).collect(),
         EDGE_WEIGHT_FORMAT::UPPER_DIAG_ROW => (0..dimension).map(|index| (index..dimension).collect()).collect(),
         EDGE_WEIGHT_FORMAT::LOWER_DIAG_COL => (0..dimension).map(|index| (index..dimension).collect()).collect(),
-        EDGE_WEIGHT_FORMAT::UPPER_ROW      => (0..(dimension - 1))
+        EDGE_WEIGHT_FORMAT::UPPER_ROW      => (0..dimension)
             .map(|index| ((index + 1)..dimension).collect()).collect(),
-        EDGE_WEIGHT_FORMAT::LOWER_COL      => (0..(dimension - 1))
+        EDGE_WEIGHT_FORMAT::LOWER_COL      => (0..dimension)
             .map(|index| ((index + 1)..dimension).collect()).collect(),
         _ => Vec::new(),
     };

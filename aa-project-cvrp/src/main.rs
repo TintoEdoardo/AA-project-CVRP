@@ -16,7 +16,7 @@ mod tsplib_parser;
 
 fn main() {
 
-    let mut contents: Vec<&str> = Vec::new();
+    let mut contents: Vec<&str> = Vec::new(); /*
     contents.push("./input/att-n48-k4.vrp");
     contents.push("./input/bayg-n29-k4.vrp");
     contents.push("./input/bays-n29-k5.vrp");
@@ -29,9 +29,10 @@ fn main() {
     contents.push("./input/gr-n21-k3.vrp");
     contents.push("./input/gr-n24-k4.vrp");
     contents.push("./input/gr-n48-k3.vrp");
-    contents.push("./input/swiss-n42-k5.vrp");
+    contents.push("./input/hk-n48-k4.vrp");
+    contents.push("./input/swiss-n42-k5.vrp");*/
     contents.push("./input/ulysses-n16-k3.vrp");
-    contents.push("./input/ulysses-n22-k4.vrp");
+    contents.push("./input/ulysses-n22-k4.vrp"); /**/
 
     for i in 0..contents.len()
     {
@@ -69,7 +70,7 @@ fn main() {
             model::compute_cost_of_routes(graph.instance.clone(), sweep_routes);
 
         /* Print the result. */
-        println!(" - - - - - - - - - - - - - - - ");
+        println!();
         println!("Instance: {}", graph.instance.specification.name.clone());
         println!("Savings Algorithm results: ");
         println!("Routes cost = {cost}, Time required = {time}",
@@ -79,7 +80,7 @@ fn main() {
         println!("Routes cost = {cost}, Time required = {time}",
                  cost = sweep_routes_cost,
                  time = sweep_alg_elapsed_time.as_nanos());
-        println!();
+        println!(" - - - - - - - - - - - - - - - ");
 
     }
 

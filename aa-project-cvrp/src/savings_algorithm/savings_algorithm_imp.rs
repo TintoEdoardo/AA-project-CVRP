@@ -83,7 +83,7 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
          * Finally computes the routes_weight vector,
          * where the i-th element contains the weight
          * of the i-th routes. */
-        for i in 1..(node_number - 1)
+        for i in 1..node_number
         {
 
             /* At first we define as many routes as
@@ -119,7 +119,7 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
             if node_to_routes[i] != node_to_routes[j] &&
                 is_node_terminal[i] &&
                 is_node_terminal[j] &&
-                routes_weight[i] + routes_weight[j] < instance.get_capacity()
+                routes_weight[i] + routes_weight[j] <= instance.get_capacity()
             {
 
                 let route_of_i : usize = node_to_routes[i];
@@ -211,10 +211,27 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
 
             /* If is not possible to merge
              * the two routes, we simply discard
-             * the savings value.
+             * the saving value.
              * Therefore no operation is required. */
 
         }
+
+        /* Before returning the results we should
+         * take care of removing empty elements in the
+         * routes vector. */
+        let mut effective_routes : Vec< Vec<usize>> = Vec::new();
+        for i in 0..routes.len()
+        {
+            if routes[i].is_empty()
+            {
+                continue;
+            }
+            else
+            {
+                effective_routes.push(routes[i].clone());
+            }
+        }
+        routes = effective_routes;
 
         return routes;
 

@@ -155,7 +155,7 @@ impl SavingsInstanceTrait for GraphInstance<'_>
             nodes.push(0);
         }
 
-        for i in 0..(node_number - 1)
+        for i in 0..node_number
         {
 
             nodes[i] = i;
@@ -523,22 +523,34 @@ pub(crate) fn compute_cost_of_routes(
         for route_i in 0..routes.len()
         {
 
-            let mut prev_index : usize = 0;
-            let route_i_len    : usize = routes[route_i].len();
+            let mut prev_index    : usize = 0;
+            let mut previous_node : usize = prev_index;
+            let route_i_len       : usize = routes[route_i].len();
 
-            for current_index in 0..routes[route_i].len()
+            /* Add the cost of the first edge. */
+            result = result + e_w_matrix[previous_node][routes[route_i][0]] as f64;
+
+            println!("    Route{}: ", route_i);
+            print!("    c-{} ", e_w_matrix[previous_node][routes[route_i][0]] as f64);
+            '_inner: for current_index in 0..route_i_len
             {
+                print!("    n-{} ", routes[route_i][current_index]);
+                let current_node  : usize = routes[route_i][current_index];
                 if current_index == route_i_len - 1
                 {
-                    result = result + e_w_matrix[current_index][0] as f64;
+                    print!("    c-{} ", e_w_matrix[current_node][0] as f64);
+                    result = result + e_w_matrix[current_node][0] as f64;
                     break;
                 }
                 else
                 {
-                    result     = result + e_w_matrix[prev_index][current_index] as f64;
-                    prev_index = current_index;
+                    print!("    c-{} ", e_w_matrix[previous_node][current_node] as f64);
+                    result        = result + e_w_matrix[previous_node][current_node] as f64;
+                    prev_index    = current_index;
+                    previous_node = routes[route_i][prev_index];
                 }
             }
+            println!();
         }
 
     }
@@ -553,23 +565,35 @@ pub(crate) fn compute_cost_of_routes(
         for route_i in 0..routes.len()
         {
 
-            let mut prev_index : usize = 0;
-            let route_i_len    : usize = routes[route_i].len();
+            /* Add the cost of the first edge. */
+            result = result + compute_distance_from_nodes_coord(&c_vector, 0, routes[route_i][0]).ceil();
 
+            let mut prev_index    : usize = 0;
+            let mut previous_node : usize = prev_index;
+            let route_i_len       : usize = routes[route_i].len();
+
+            println!("    Route{}: ", route_i);
+            print!("    c-{} ", compute_distance_from_nodes_coord(&c_vector, 0, routes[route_i][0]).ceil());
             for current_index in 0..routes[route_i].len()
             {
 
+                print!("    n-{} ", routes[route_i][current_index]);
+                let current_node  : usize = routes[route_i][current_index];
                 if current_index == route_i_len - 1
                 {
-                    result = result + compute_distance_from_nodes_coord(&c_vector, current_index, 0);
+                    print!("    c-{} ", compute_distance_from_nodes_coord(&c_vector, current_node, 0).ceil());
+                    result = result + compute_distance_from_nodes_coord(&c_vector, current_node, 0).ceil();
                     break;
                 }
                 else
                 {
-                    result     = result + compute_distance_from_nodes_coord(&c_vector, prev_index, current_index);
-                    prev_index = current_index;
+                    print!("    c-{} ", compute_distance_from_nodes_coord(&c_vector, previous_node, current_node).ceil());
+                    result        = result + compute_distance_from_nodes_coord(&c_vector, previous_node, current_node).ceil();
+                    prev_index    = current_index;
+                    previous_node = routes[route_i][prev_index];
                 }
             }
+            println!();
         }
 
     }
