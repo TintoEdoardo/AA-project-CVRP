@@ -63,7 +63,7 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
         // let depot_index : usize = 0;
         // let depot_id    : usize = nodes_list[depot_index];
 
-        /* Compute savings, regardless of
+        /* Compute savings, regardless of the
          * instance type.
          * Each element of savings is a tuple
          * (i, j, w(i,g)) where i and j are two incident
@@ -119,7 +119,7 @@ impl<'a> CVRPSolver for SavingsSolver<'a>
             if node_to_routes[i] != node_to_routes[j] &&
                 is_node_terminal[i] &&
                 is_node_terminal[j] &&
-                routes_weight[i] + routes_weight[j] <= instance.get_capacity()
+                routes_weight[i] + routes_weight[j] < instance.get_capacity()
             {
 
                 let route_of_i : usize = node_to_routes[i];

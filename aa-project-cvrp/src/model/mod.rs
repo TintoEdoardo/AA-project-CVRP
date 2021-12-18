@@ -471,6 +471,7 @@ fn compute_node_list_sort_by_distance(
 
 }
 
+/*
 fn compute_distance_from_nodes_coord(
     coord : &Vec<Coord>,
     n1    : usize,
@@ -493,6 +494,7 @@ fn compute_distance_from_nodes_coord(
     return ((n1_x - n2_x).powf(2.0) + (n1_y - n2_y).powf(2.0)).sqrt();
 
 }
+ */
 
 pub(crate) fn compute_cost_of_routes(
     instance : TSPInstance,
@@ -528,30 +530,23 @@ pub(crate) fn compute_cost_of_routes(
             let mut previous_node : usize = prev_index;
             let route_i_len       : usize = routes[route_i].len();
 
-            /* Add the cost of the first edge. */
-            result = result + e_w_matrix[previous_node][routes[route_i][0]] as f64;
-
-            println!("    Route{}: ", route_i);
-            print!("    c-{} ", e_w_matrix[previous_node][routes[route_i][0]] as f64);
             '_inner: for current_index in 0..route_i_len
             {
-                print!("    n-{} ", routes[route_i][current_index]);
+
                 let current_node  : usize = routes[route_i][current_index];
+
+                result        = result + e_w_matrix[previous_node][current_node] as f64;
+                prev_index    = current_index;
+                previous_node = routes[route_i][prev_index];
+
                 if current_index == route_i_len - 1
                 {
-                    print!("    c-{} ", e_w_matrix[current_node][0] as f64);
                     result = result + e_w_matrix[current_node][0] as f64;
                     break;
                 }
-                else
-                {
-                    print!("    c-{} ", e_w_matrix[previous_node][current_node] as f64);
-                    result        = result + e_w_matrix[previous_node][current_node] as f64;
-                    prev_index    = current_index;
-                    previous_node = routes[route_i][prev_index];
-                }
+
             }
-            println!();
+
         }
 
     }
@@ -578,35 +573,27 @@ pub(crate) fn compute_cost_of_routes(
         for route_i in 0..routes.len()
         {
 
-            /* Add the cost of the first edge. */
-            result = result + distance_function(&c_vector[0], &c_vector[routes[route_i][0]]);
-
             let mut prev_index    : usize = 0;
             let mut previous_node : usize = prev_index;
             let route_i_len       : usize = routes[route_i].len();
 
-            println!("    Route{}: ", route_i);
-            print!("    c-{} ", distance_function(&c_vector[0], &c_vector[routes[route_i][0]]));
-            for current_index in 0..routes[route_i].len()
+            for current_index in 0..route_i_len
             {
 
-                print!("    n-{} ", routes[route_i][current_index]);
                 let current_node  : usize = routes[route_i][current_index];
+
+                result        = result + distance_function(&c_vector[previous_node], &c_vector[current_node]);
+                prev_index    = current_index;
+                previous_node = routes[route_i][prev_index];
+
                 if current_index == route_i_len - 1
                 {
-                    print!("    c-{} ", distance_function(&c_vector[current_node], &c_vector[0]));
                     result = result + distance_function(&c_vector[current_node], &c_vector[0]);
                     break;
                 }
-                else
-                {
-                    print!("    c-{} ", distance_function(&c_vector[previous_node], &c_vector[current_node]));
-                    result        = result + distance_function(&c_vector[previous_node], &c_vector[current_node]);
-                    prev_index    = current_index;
-                    previous_node = routes[route_i][prev_index];
-                }
+
             }
-            println!();
+
         }
 
     }

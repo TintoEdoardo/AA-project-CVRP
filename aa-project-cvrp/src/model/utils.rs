@@ -67,7 +67,7 @@ pub(crate) fn compute_distance_euc(
 
     /* Compute distance. */
     let dist_1_2 : f64 =
-        ((x_1 - x_2).powf(2.0) + (y_1 - y_2).powf(2.0)).sqrt();
+        ((x_1 - x_2).powf(2.0) + (y_1 - y_2).powf(2.0)).sqrt().ceil();
 
     return dist_1_2;
 
@@ -140,26 +140,26 @@ pub(crate) fn compute_distance_geo(
     };
 
     /* Compute the latitude of node 1. */
-    let node_1_lat_deg : f64 = x_1.floor();
-    let node_1_lat_min : f64 = x_1 - node_1_lat_deg;
+    let node_1_lat_deg : f64 = x_1.trunc();
+    let node_1_lat_min : f64 = x_1.fract(); // - node_1_lat_deg;
     let latitude_1     : f64 =
         std::f64::consts::PI * (node_1_lat_deg + 5.0 * node_1_lat_min / 3.0) / 180.0;
 
     /* Compute the latitude of node 2. */
-    let node_2_lat_deg : f64 = x_2.floor();
-    let node_2_lat_min : f64 = x_2 - node_2_lat_deg;
+    let node_2_lat_deg : f64 = x_2.trunc();
+    let node_2_lat_min : f64 = x_2.fract(); // - node_2_lat_deg;
     let latitude_2     : f64 =
         std::f64::consts::PI * (node_2_lat_deg + 5.0 * node_2_lat_min / 3.0) / 180.0;
 
     /* Compute the longitude of node 1. */
-    let node_1_lon_deg : f64 = y_1.floor();
-    let node_1_lon_min : f64 = y_1 - node_1_lon_deg;
+    let node_1_lon_deg : f64 = y_1.trunc();
+    let node_1_lon_min : f64 = y_1.fract(); // - node_1_lon_deg;
     let longitude_1     : f64 =
         std::f64::consts::PI * (node_1_lon_deg + 5.0 * node_1_lon_min / 3.0) / 180.0;
 
     /* Compute the longitude of node 2. */
-    let node_2_lon_deg : f64 = y_2.floor();
-    let node_2_lon_min : f64 = y_2 - node_2_lon_deg;
+    let node_2_lon_deg : f64 = y_2.trunc();
+    let node_2_lon_min : f64 = y_2.fract(); // - node_2_lon_deg;
     let longitude_2     : f64 =
         std::f64::consts::PI * (node_2_lon_deg + 5.0 * node_2_lon_min / 3.0) / 180.0;
 
@@ -206,7 +206,7 @@ pub(crate) fn compute_savings_geo(
                             compute_distance_geo(&n_coord[i], &n_coord[j]);
 
                         /* Compute the saving for the edge between i, j. */
-                        let s : usize = (d_0_i + d_0_j - d_i_j) as usize;
+                        let s : usize = (d_0_i + d_0_j - d_i_j).ceil() as usize;
 
                         savings.push((i, j, s));
 
